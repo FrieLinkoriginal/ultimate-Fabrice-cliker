@@ -246,15 +246,21 @@ body{transition:background-color .6s}
     g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
     o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+0.02);
   }
+  function stopCoraleMelody(){
+    coraleMelodyTimers.forEach(function(timer){clearTimeout(timer);});
+    coraleMelodyTimers = [];
+  }
   function playCoraleMelody(){
     if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
+    stopCoraleMelody();
     var notes=[392,392,440,392,523.25,392,659.25,587.33,523.25,440,523.25,659.25,587.33,523.25,392,440,392];
     notes.forEach(function(freq,index){
-      setTimeout(function(){
+      var timer=setTimeout(function(){
         if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
         tone(freq,freq*1.08,0,0.2,"square",0.05);
         tone(freq*0.75,freq*0.8,0.05,0.14,"square",0.03);
       },index*220);
+      coraleMelodyTimers.push(timer);
     });
   }
   function errBeep(){tone(520,500,0,0.13,"square",0.12);tone(330,310,0.15,0.22,"square",0.12);}
@@ -300,7 +306,6 @@ body{transition:background-color .6s}
     {id:"allshop",secret:1,t:"Tout est acheté",d:"Acheter tous les objets du magasin"},
     {id:"mute",secret:1,t:"Silence",d:"Mettre la musique en sourdine"},
     {id:"lavage",secret:1,t:"Lavage de cerveaux",d:"Écouter la musique pendant 2 minutes"},
-    {id:"cheater",secret:1,t:"Cheater",d:"Détecter un auto-click"},
     {id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l'image de Fabrice tout en bas de la page"}
   ];
   var SHOP_ITEMS=[
@@ -354,8 +359,8 @@ body{transition:background-color .6s}
   var SESSION_START = Date.now();
   var MUSIC_LISTEN_MS = 0;
   var lastUserInteract = Date.now();
-  var autoClickLock = false;
   var chorusPulse = null;
+  var coraleMelodyTimers = [];
   var helpBoosting = false;
   var helpBankSnapshot = 0;
   var coraleMuteButton = document.getElementById("coraleMute");
@@ -395,7 +400,20 @@ body{transition:background-color .6s}
     if(!chorus)return;
     var active = !!save.shop.items.corale && !!save.shop.items.coraleEnabled;
     chorus.classList.toggle("hidden", !active);
-    if(active && !chorus.dataset.ready){
+    if(!active){
+      stopCoraleMelody();
+      if(chorus.dataset.ready){
+        chorus.innerHTML="";
+        delete chorus.dataset.ready;
+      }
+      if(chorusPulse){
+        clearInterval(chorusPulse);
+        chorusPulse = null;
+      }
+      syncCoraleMute();
+      return;
+    }
+    if(!chorus.dataset.ready){
       chorus.dataset.ready = "1";
       chorus.innerHTML = "";
       for(var i=0;i<5;i++){
@@ -410,14 +428,6 @@ body{transition:background-color .6s}
         },2200);
       }
     }
-    if(!active && chorus.dataset.ready){
-      chorus.innerHTML="";
-      delete chorus.dataset.ready;
-    }
-    if(!active && chorusPulse){
-      clearInterval(chorusPulse);
-      chorusPulse = null;
-    }
     syncCoraleMute();
   }
   function setShopName(value){
@@ -428,15 +438,6 @@ body{transition:background-color .6s}
     try{localStorage.setItem(NK,v);}catch(e){}
     persist();
   }
-  function detectAutoClick(event){
-    if(event && event.isTrusted === false && !autoClickLock){
-      autoClickLock = true;
-      unlock("cheater");
-    }
-  }
-  ["pointerdown","keydown","touchstart"].forEach(function(ev){
-    document.addEventListener(ev,function(){lastUserInteract = Date.now(); autoClickLock = false;});
-  });
   if(chatName){
     chatName.value = save.shop.name || (function(){try{return localStorage.getItem(NK)||"";}catch(e){return "";}}());
     if((chatName.value||'').toLowerCase()==='fabrice')unlock("menteur");
@@ -471,17 +472,7 @@ body{transition:background-color .6s}
     persist();
     syncBank();
   }
-  function showCheaterDeathDialog(){
-    var title=document.getElementById("t");
-    var msg=document.querySelector(".dlg .msg");
-    if(title)title.textContent="Fabrice ne fonctionne plus";
-    if(msg)msg.innerHTML="Erreur de fin de run<br>Fabrice a détecté un auto-click";
-  }
   function spawnDeathText(){
-    if(save.u.cheater){
-      showCheaterDeathDialog();
-      return;
-    }
     var el=document.createElement("div");
     el.className="death-pop";
     el.textContent="Fabrice est mort";
@@ -664,7 +655,6 @@ body{transition:background-color .6s}
     var elapsed = Date.now() - SESSION_START;
     if(elapsed >= 3600000)unlock("hour");
     if(musicOn && !bgm.paused){MUSIC_LISTEN_MS += 1000; if(MUSIC_LISTEN_MS >= 120000)unlock("lavage");}
-    detectAutoClick();
   },1000);
   syncCorale();
   /* ===== Skins & collection ===== */
@@ -760,10 +750,17 @@ body{transition:background-color .6s}
   var GITHUB_PATH=(window.FABRICE_GITHUB_PATH||"scores/highscores.json").replace(/^\/+/, "");
   var GITHUB_TOKEN=(window.FABRICE_GITHUB_TOKEN||"").trim();
   var GITHUB_ENABLED=!!GITHUB_REPO && !!GITHUB_TOKEN;
+  var SUPABASE_URL=(window.FABRICE_SUPABASE_URL||"").trim().replace(/\/+$/, "");
+  var SUPABASE_KEY=(window.FABRICE_SUPABASE_ANON_KEY||window.FABRICE_SUPABASE_KEY||"").trim();
+  var SUPABASE_TABLE=(window.FABRICE_SUPABASE_TABLE||"scores").trim();
+  var SUPABASE_ENABLED=!!SUPABASE_URL && !!SUPABASE_KEY;
 
   function setScores(arr){
-    scores=(Array.isArray(arr)?arr:[]).filter(function(e){return e&&typeof e.s==="number"&&typeof e.name==="string";})
-      .map(function(e){return {id:e.id,name:e.name,s:e.s,t:Date.parse(e.t)||0};});
+    scores=(Array.isArray(arr)?arr:[]).filter(function(e){return e&&((typeof e.s==="number"&&typeof e.name==="string")||(typeof e.score==="number"&&typeof e.name==="string"));})
+      .map(function(e){
+        var s = typeof e.s === "number" ? e.s : Number(e.score) || 0;
+        return {id:e.id || e.uuid || (e.name + "-" + s + "-" + (e.created_at || "")), name:e.name, s:s, t:Date.parse(e.t||e.created_at||0)||0};
+      });
   }
   function getLocalScores(){
     try{
@@ -825,7 +822,30 @@ body{transition:background-color .6s}
       })
       .then(function(r){if(!r.ok)throw new Error("GitHub write failed"); return r.json();});
   }
+  function loadFromSupabase(){
+    if(!SUPABASE_ENABLED) return Promise.reject(new Error("Supabase non configuré"));
+    var url=SUPABASE_URL + "/rest/v1/" + encodeURIComponent(SUPABASE_TABLE) + "?select=name,score,created_at&order=score.desc&limit=50";
+    return fetch(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer " + SUPABASE_KEY,"Content-Type":"application/json"}})
+      .then(function(r){if(!r.ok)throw new Error("Supabase unavailable"); return r.json();})
+      .then(function(data){
+        var rows = Array.isArray(data) ? data : [];
+        setScores(rows.map(function(row){return {name: row.name, score: Number(row.score) || 0, created_at: row.created_at || new Date().toISOString()};}));
+        return rows;
+      });
+  }
+  function saveToSupabase(name,score){
+    if(!SUPABASE_ENABLED) return Promise.reject(new Error("Supabase non configuré"));
+    var url=SUPABASE_URL + "/rest/v1/" + encodeURIComponent(SUPABASE_TABLE);
+    return fetch(url,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer " + SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({name:name,score:Number(score)||0,created_at:new Date().toISOString()})})
+      .then(function(r){if(!r.ok){return r.text().then(function(msg){throw new Error(msg || "Supabase write failed");});} return r.json().catch(function(){return null;});});
+  }
   function load(){
+    if(SUPABASE_ENABLED){
+      return loadFromSupabase().catch(function(){
+        setScores(getLocalScores());
+        return getLocalScores();
+      });
+    }
     if(GITHUB_ENABLED){
       return loadFromGithub().catch(function(){
         setScores(getLocalScores());
@@ -944,8 +964,6 @@ body{transition:background-color .6s}
   }
   fab.addEventListener("click",function(e){
     lastUserInteract = Date.now();
-    autoClickLock = false;
-    detectAutoClick(e);
     hit(1,wiggle);
   });
   /* Fermeture de la fenêtre : Fabrice tombe */

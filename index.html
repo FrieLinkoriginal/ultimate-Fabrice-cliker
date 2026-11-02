@@ -345,8 +345,9 @@ body{transition:background-color .6s}
     persist();
     syncBank();
   }
+  var TOTAL_ACHIEVEMENTS = 22;
   function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return c;}
-  function total(){var t=ACH.length;HID.forEach(function(a){if(save.u[a.id])t++;});return t;}
+  function total(){return TOTAL_ACHIEVEMENTS;}
   function refresh(){cnt.textContent=count()+"/"+total();}
   checkAllSkinAchievement();
   checkAllShopAchievement();
@@ -551,23 +552,104 @@ body{transition:background-color .6s}
     hs.hidden=true;setBg(0);
   }
   /* ===== High scores (en ligne) ===== */
-  /* Site sur Netlify : laisser vide. Front sur GitHub Pages : mettre l'URL du site Netlify qui héberge l'API, ex. "https://fabricecliker.netlify.app" */
+  /*
+    Solution pratique pour GitHub Pages :
+    - Si `window.FABRICE_API_BASE` est défini, on l'utilise.
+    - Si le site est sur GitHub Pages, on peut aussi configurer `window.FABRICE_GITHUB_REPO` + `window.FABRICE_GITHUB_TOKEN`
+      pour écrire dans un JSON GitHub via l'API GitHub.
+    - Si rien n'est configuré, on passe en mode local fiable (localStorage), sans casser le jeu.
+  */
+  var NK="fabrice-clicker-name",scores=[],lastId=null,submitted=false,sending=false;
+  var hs=document.getElementById("hs"),hsn=document.getElementById("hsn"),hsname=document.getElementById("hsname"),hsok=document.getElementById("hsok"),
+      hsmsg=document.getElementById("hsmsg"),top5=document.getElementById("top5"),allEl=document.getElementById("all"),restart=document.getElementById("restart");
   var API_BASE=(window.FABRICE_API_BASE || (function(){
     var host=window.location.hostname||"";
     if(host === "localhost" || host === "127.0.0.1") return "";
     if(host.indexOf("netlify.app") !== -1) return window.location.origin;
-    if(host.indexOf("github.io") !== -1) return "https://fabrice-clicker.netlify.app";
+    if(host.indexOf("github.io") !== -1) return "";
     return "https://fabrice-clicker.netlify.app";
   })());
-  var NK="fabrice-clicker-name",API=API_BASE+"/api/scores",scores=[],lastId=null,submitted=false,sending=false;
-  var hs=document.getElementById("hs"),hsn=document.getElementById("hsn"),hsname=document.getElementById("hsname"),hsok=document.getElementById("hsok"),
-      hsmsg=document.getElementById("hsmsg"),top5=document.getElementById("top5"),allEl=document.getElementById("all"),restart=document.getElementById("restart");
+  var GITHUB_REPO=(window.FABRICE_GITHUB_REPO||"").trim();
+  var GITHUB_PATH=(window.FABRICE_GITHUB_PATH||"scores/highscores.json").replace(/^\/+/, "");
+  var GITHUB_TOKEN=(window.FABRICE_GITHUB_TOKEN||"").trim();
+  var GITHUB_ENABLED=!!GITHUB_REPO && !!GITHUB_TOKEN;
+
   function setScores(arr){
     scores=(Array.isArray(arr)?arr:[]).filter(function(e){return e&&typeof e.s==="number"&&typeof e.name==="string";})
       .map(function(e){return {id:e.id,name:e.name,s:e.s,t:Date.parse(e.t)||0};});
   }
+  function getLocalScores(){
+    try{
+      var raw=localStorage.getItem("fabrice-clicker-scores");
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      return [];
+    }
+  }
+  function saveLocalScores(arr){
+    try{localStorage.setItem("fabrice-clicker-scores",JSON.stringify(arr));}catch(e){}
+  }
+  function githubFileUrl(){
+    if(!GITHUB_REPO) return "";
+    var parts=GITHUB_REPO.split("/").filter(Boolean);
+    if(parts.length < 2) return "";
+    var owner=parts[0],repo=parts.slice(1).join("/");
+    return "https://api.github.com/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo) + "/contents/" + encodeURIComponent(GITHUB_PATH);
+  }
+  function encodeBase64(str){
+    if(typeof TextEncoder !== "undefined"){
+      var bytes=new TextEncoder().encode(str),out=[];
+      for(var i=0;i<bytes.length;i++) out.push(String.fromCharCode(bytes[i]));
+      return btoa(out.join(""));
+    }
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function decodeBase64(str){
+    try{
+      return decodeURIComponent(escape(atob(str.replace(/\s+/g, ""))));
+    }catch(e){
+      return atob(str.replace(/\s+/g, ""));
+    }
+  }
+  function loadFromGithub(){
+    if(!GITHUB_ENABLED) return Promise.reject(new Error("GitHub non configuré"));
+    var url=githubFileUrl();
+    if(!url) return Promise.reject(new Error("Repo GitHub invalide"));
+    return fetch(url,{headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer " + GITHUB_TOKEN,"X-GitHub-Api-Version":"2022-11-28"}})
+      .then(function(r){if(!r.ok)throw new Error("GitHub score unavailable"); return r.json();})
+      .then(function(data){
+        var text=(data&&data.content)?decodeBase64(data.content):"[]";
+        var parsed=[];
+        try{parsed=JSON.parse(text);}catch(e){parsed=[];}
+        setScores(parsed);
+        return parsed;
+      });
+  }
+  function saveToGithub(arr){
+    if(!GITHUB_ENABLED) return Promise.reject(new Error("GitHub non configuré"));
+    var url=githubFileUrl();
+    if(!url) return Promise.reject(new Error("Repo GitHub invalide"));
+    var body={message:"Update Fabrice Clicker leaderboard",content:encodeBase64(JSON.stringify(arr,null,2))};
+    return fetch(url,{method:"GET",headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer " + GITHUB_TOKEN,"X-GitHub-Api-Version":"2022-11-28"}})
+      .then(function(r){if(!r.ok && r.status !== 404) throw new Error("GitHub read failed"); return r.status === 404 ? null : r.json();})
+      .then(function(existing){
+        if(existing && existing.sha){body.sha=existing.sha; return fetch(url,{method:"PUT",headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer " + GITHUB_TOKEN,"X-GitHub-Api-Version":"2022-11-28"},body:JSON.stringify(body)});}
+        return fetch("https://api.github.com/repos/" + encodeURIComponent(GITHUB_REPO.split("/")[0]) + "/" + encodeURIComponent(GITHUB_REPO.split("/")[1]) + "/contents/" + encodeURIComponent(GITHUB_PATH),{method:"PUT",headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer " + GITHUB_TOKEN,"X-GitHub-Api-Version":"2022-11-28"},body:JSON.stringify(body)});
+      })
+      .then(function(r){if(!r.ok)throw new Error("GitHub write failed"); return r.json();});
+  }
   function load(){
-    return fetch(API,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(setScores);
+    if(GITHUB_ENABLED){
+      return loadFromGithub().catch(function(){
+        setScores(getLocalScores());
+        return getLocalScores();
+      });
+    }
+    if(API_BASE){
+      return fetch(API_BASE+"/api/scores",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(setScores);
+    }
+    setScores(getLocalScores());
+    return Promise.resolve(getLocalScores());
   }
   function byScore(a,b){return b.s-a.s||a.t-b.t;}
   function board(){
@@ -595,16 +677,33 @@ body{transition:background-color .6s}
     load().then(function(){if(!submitted&&!sending)hsmsg.textContent="";render();})
       .catch(function(){if(!submitted&&!sending)hsmsg.textContent="Impossible de charger les scores en ligne.";});
   }
+  function saveRemoteScore(name,score){
+    if(GITHUB_ENABLED){
+      var arr=scores.slice();
+      arr.push({id:"gh-" + Date.now(),name:name,s:score,t:new Date().toISOString()});
+      saveLocalScores(arr);
+      return saveToGithub(arr).then(function(){setScores(arr);return arr;}).catch(function(){setScores(arr);return arr;});
+    }
+    if(API_BASE){
+      return fetch(API_BASE+"/api/scores",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:name,score:score})})
+        .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d&&d.error||"Erreur");return d;});})
+        .then(function(d){setScores(d.scores);return d.scores;});
+    }
+    var arr=getLocalScores().slice();
+    arr.push({id:"local-" + Date.now(),name:name,s:score,t:new Date().toISOString()});
+    saveLocalScores(arr);
+    setScores(arr);
+    return Promise.resolve(arr);
+  }
   function submitAuto(){
     var nm=(chatName&&chatName.value?chatName.value:hsname.value).trim().replace(/\s+/g," ");
     if(!nm){hs.hidden=true;showHS();return;}
     setShopName(nm);
     hsname.value=nm;
     hsmsg.textContent="Envoi…";
-    fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:nm,score:n})})
-      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d&&d.error||"Erreur");return d;});})
-      .then(function(d){
-        setScores(d.scores);render();
+    saveRemoteScore(nm,n)
+      .then(function(){
+        render();
         hs.hidden=true;
         setTimeout(reset,700);
       })
@@ -621,11 +720,10 @@ body{transition:background-color .6s}
     try{localStorage.setItem(NK,nm);}catch(e){}
     if(chatName){chatName.value=nm;save.shop.name=nm;persist();}
     sending=true;hsname.disabled=true;hsok.disabled=true;hsmsg.textContent="Envoi…";
-    fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:nm,score:n})})
-      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d&&d.error||"Erreur");return d;});})
-      .then(function(d){
-        sending=false;submitted=true;lastId=d.id;setScores(d.scores);render();
-        var rank=0,b=board();for(var i=0;i<b.length;i++)if(b[i].id===lastId){rank=i+1;break;}
+    saveRemoteScore(nm,n)
+      .then(function(){
+        sending=false;submitted=true;lastId="submitted";setScores(scores);
+        var rank=0,b=board();for(var i=0;i<b.length;i++)if(b[i].name===nm&&b[i].s===n){rank=i+1;break;}
         hsmsg.textContent=rank>0?"Enregistré ! Place n°"+rank+". Fabrice reste devant.":"Enregistré !";
         restart.focus();
       })

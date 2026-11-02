@@ -1,12 +1,26 @@
 # Fabrice Clicker
 
-Jeu en HTML pur (`index.html`) + API de scores en ligne (Netlify Functions + Netlify Database).
+Jeu en HTML pur (`index.html`) avec système de scores compatible GitHub Pages.
 
-## Déployer
-1. Pousser ce dépôt sur GitHub.
-2. Sur Netlify : *Add new site → Import from Git* → choisir le dépôt. Aucune commande de build n'est nécessaire (voir `netlify.toml`).
-3. Les scores sont servis par `/api/scores` (`netlify/functions/scores.ts`, table créée par `netlify/database/migrations`).
+## Solution fonctionnelle pour GitHub
+GitHub Pages est statique : il ne peut pas exécuter de vraie API backend sans configuration supplémentaire.
 
-## Front sur GitHub Pages ?
-GitHub Pages est statique : il ne peut pas exécuter l'API. Garde le backend sur Netlify et renseigne
-son URL dans `index.html` : `var API_BASE="https://ton-site.netlify.app";` (le CORS est déjà activé).
+La solution fiable est de garder le frontend sur GitHub Pages et d’utiliser un stockage GitHub compatible en configurant:
+- `window.FABRICE_GITHUB_REPO` = `owner/repo`
+- `window.FABRICE_GITHUB_PATH` = `scores/highscores.json` (optionnel)
+- `window.FABRICE_GITHUB_TOKEN` = token GitHub avec droit de lecture/écriture sur le dépôt
+
+Exemple dans le script de chargement :
+```html
+<script>
+  window.FABRICE_GITHUB_REPO = "mon-compte/fabrice-clicker";
+  window.FABRICE_GITHUB_PATH = "scores/highscores.json";
+  window.FABRICE_GITHUB_TOKEN = "ghp_xxx";
+</script>
+```
+
+## Fallback sans backend
+Si aucun backend n’est configuré, le jeu reste fonctionnel en mode local avec `localStorage`.
+
+## Ancienne version Netlify
+Le projet garde aussi un backend Netlify compatible pour les environnements qui utilisent `/api/scores` (`netlify/functions/scores.ts`).

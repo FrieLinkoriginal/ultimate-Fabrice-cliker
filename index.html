@@ -288,6 +288,7 @@ body{transition:background-color .6s}
   save.shop.items.heart = Math.max(0,Math.min(10,Number(save.shop.items.heart)||0));
   save.shop.items.double = Math.max(0,Math.min(5,Number(save.shop.items.double)||0));
   save.shop.items.boucle = !!save.shop.items.boucle;
+  save.shop.items.boucleEnabled = save.shop.items.boucle ? (typeof save.shop.items.boucleEnabled === "boolean" ? save.shop.items.boucleEnabled : true) : false;
   save.shop.items.golden = !!save.shop.items.golden;
   /* Sauvegardes existantes : les exploits déjà réalisés donnent leur skin */
   if(save.u.r2)save.sk.k2=1;
@@ -432,15 +433,29 @@ body{transition:background-color .6s}
         var level=(item.levelKey&&typeof save.shop.items[item.levelKey]==="number")?save.shop.items[item.levelKey]:0;
         var isOwned = item.max===1 ? !!(save.shop.items[item.levelKey]) : level >= item.max;
         var card=document.createElement("div");card.className="shop-card";
-        card.innerHTML='<img src="'+item.icon+'" alt="'+item.name+'"><h3>'+item.name+'</h3><p>'+item.desc+'</p><div class="shop-meta"><span>'+(item.max===1? (isOwned?"Acheté":"Prix : "+shopCost(item)+" clics") : "Niveau "+level+" / "+item.max+" • "+shopCost(item)+" clics")+'</span></div>';
-        var btn=document.createElement("button");btn.type="button";btn.className="shop-buy";btn.disabled = isOwned || save.shop.bank < shopCost(item);
-        btn.textContent = isOwned ? "Acheté" : "Acheter";
+        var statusText = item.max===1 ? (isOwned ? "Acheté" : "Prix : "+shopCost(item)+" clics") : "Niveau "+level+" / "+item.max+" • "+shopCost(item)+" clics";
+        if(item.id === "boucle" && isOwned){
+          statusText = (save.shop.items.boucleEnabled ? "Activée" : "Désactivée") + " • " + shopCost(item) + " clics";
+        }
+        card.innerHTML='<img src="'+item.icon+'" alt="'+item.name+'"><h3>'+item.name+'</h3><p>'+item.desc+'</p><div class="shop-meta"><span>' + statusText + '</span></div>';
+        var btn=document.createElement("button");btn.type="button";btn.className="shop-buy";btn.disabled = false;
+        if(item.id === "boucle" && isOwned){
+          btn.textContent = save.shop.items.boucleEnabled ? "Désactiver" : "Activer";
+        } else {
+          btn.disabled = isOwned || save.shop.bank < shopCost(item);
+          btn.textContent = isOwned ? "Acheté" : "Acheter";
+        }
         btn.addEventListener("click",function(e){
           e.stopPropagation();
+          if(item.id === "boucle" && isOwned){
+            save.shop.items.boucleEnabled = !save.shop.items.boucleEnabled;
+            persist();syncPseudoBox();render();
+            return;
+          }
           var cost=shopCost(item);
           if(isOwned || save.shop.bank < cost){return;}
           save.shop.bank -= cost;
-          if(item.levelKey === "boucle"){save.shop.items.boucle = true;}
+          if(item.levelKey === "boucle"){save.shop.items.boucle = true; save.shop.items.boucleEnabled = true;}
           else if(item.levelKey === "golden"){save.shop.items.golden = true; unlockSkin("k8"); }
           else {save.shop.items[item.levelKey] = Math.min(item.max, (save.shop.items[item.levelKey]||0)+1);}
           persist();syncBank();syncPseudoBox();checkAllShopAchievement();render();
@@ -534,13 +549,13 @@ body{transition:background-color .6s}
   }
   /* ===== High scores (en ligne) ===== */
   /* Site sur Netlify : laisser vide. Front sur GitHub Pages : mettre l'URL du site Netlify qui héberge l'API, ex. "https://fabricecliker.netlify.app" */
-  var API_BASE=(function(){
+  var API_BASE=(window.FABRICE_API_BASE || (function(){
     var host=window.location.hostname||"";
     if(host === "localhost" || host === "127.0.0.1") return "";
     if(host.indexOf("netlify.app") !== -1) return window.location.origin;
     if(host.indexOf("github.io") !== -1) return "https://fabrice-clicker.netlify.app";
-    return "";
-  })();
+    return "https://fabrice-clicker.netlify.app";
+  })());
   var NK="fabrice-clicker-name",API=API_BASE+"/api/scores",scores=[],lastId=null,submitted=false,sending=false;
   var hs=document.getElementById("hs"),hsn=document.getElementById("hsn"),hsname=document.getElementById("hsname"),hsok=document.getElementById("hsok"),
       hsmsg=document.getElementById("hsmsg"),top5=document.getElementById("top5"),allEl=document.getElementById("all"),restart=document.getElementById("restart");
@@ -649,7 +664,7 @@ body{transition:background-color .6s}
     hint.textContent="";
     fab.classList.remove("hit","hit2");void fab.offsetWidth;
     fab.classList.add("fall");
-    if(save.shop.items.boucle && scoreQualifiesTop5(n)){
+    if(save.shop.items.boucle && save.shop.items.boucleEnabled && scoreQualifiesTop5(n)){
       setTimeout(function(){thud();fab.style.visibility="hidden";submitAuto();},880);
       return;
     }

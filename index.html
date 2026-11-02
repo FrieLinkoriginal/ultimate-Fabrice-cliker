@@ -246,7 +246,7 @@ body{transition:background-color .6s}
   for(i0=10;i0<=100;i0+=10)ACH.push({id:"s"+i0,t:"Atteindre "+i0,d:"Arriver à "+i0+" clics"});
   ACH.push({id:"d67",t:"Pile 67",d:"Mourir à exactement 67"});
   ACH.push({id:"d69",t:"Pile 69",d:"Mourir à exactement 69"});
-  for(k0=2;k0<=5;k0++)ACH.push({id:"r"+k0,t:k0+" fois pareil",d:"Mourir "+k0+" fois de suite avec le même score"});
+  for(k0=2;k0<=3;k0++)ACH.push({id:"r"+k0,t:k0+" fois pareil",d:"Mourir "+k0+" fois de suite avec le même score"});
   ACH.push({id:"allskins",t:"Collection complète",d:"Débloquer tous les skins du jeu"});
   /* Succès cachés : n'apparaissent dans la liste qu'une fois débloqués */
   var HID=[
@@ -254,6 +254,7 @@ body{transition:background-color .6s}
     {id:"close",secret:1,t:"Fermeture définitive",d:"Fermer Fabrice avec la croix de sa fenêtre"},
     {id:"reffu",secret:1,t:"Reffu",d:"Fermer la fenêtre de fin avec la croix"},
     {id:"hand",secret:1,t:"Tope là",d:"Cliquer sur la main de Fabrice"},
+    {id:"menteur",secret:1,t:"Menteur",d:"Mettre Fabrice comme pseudo"},
     {id:"shop",secret:1,t:"Magazinzin",d:"Ouvrir le magasin de Fabrice"},
     {id:"allshop",secret:1,t:"Tout est acheté",d:"Acheter tous les objets du magasin"},
     {id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l'image de Fabrice tout en bas de la page"}
@@ -299,17 +300,20 @@ body{transition:background-color .6s}
   syncColl();
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
   var cnt=document.getElementById("cnt"),trophy=document.getElementById("trophy"),toasts=document.getElementById("toasts"),bankEl=document.getElementById("bank"),shopButton=document.getElementById("shopButton"),chatBox=document.getElementById("chatBox"),chatName=document.getElementById("chatName"),chatSend=document.getElementById("chatSend");
+  var q=[],showing=false;
   function syncBank(){if(bankEl)bankEl.textContent=String(Math.max(0,Math.round(save.shop.bank||0))); if(shopButton){shopButton.hidden = !save.shop.unlocked;}}
   function syncPseudoBox(){if(chatBox)chatBox.hidden = !save.shop.items.boucle; if(chatName && save.shop.name){chatName.value=save.shop.name;}}
   function setShopName(value){
     var v=(value||'').toString().trim().replace(/\s+/g,' ');
     save.shop.name=v;
+    if(v.toLowerCase()==='fabrice')unlock("menteur");
     if(chatName)chatName.value=v;
     try{localStorage.setItem(NK,v);}catch(e){}
     persist();
   }
   if(chatName){
     chatName.value = save.shop.name || (function(){try{return localStorage.getItem(NK)||"";}catch(e){return "";}}());
+    if((chatName.value||'').toLowerCase()==='fabrice')unlock("menteur");
     chatName.addEventListener("input",function(){setShopName(chatName.value);});
     chatSend.addEventListener("click",function(){setShopName(chatName.value);});
   }
@@ -343,7 +347,6 @@ body{transition:background-color .6s}
   }
   function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return c;}
   function total(){var t=ACH.length;HID.forEach(function(a){if(save.u[a.id])t++;});return t;}
-  var q=[],showing=false;
   function refresh(){cnt.textContent=count()+"/"+total();}
   checkAllSkinAchievement();
   checkAllShopAchievement();
@@ -397,7 +400,7 @@ body{transition:background-color .6s}
     if(n===69){unlock("d69");unlockSkin("k7");}
     if(save.last===n)save.streak++;else save.streak=1;
     save.last=n;
-    for(var k=2;k<=5;k++)if(save.streak>=k)unlock("r"+k);
+    for(var k=2;k<=3;k++)if(save.streak>=k)unlock("r"+k);
     if(save.streak>=2)unlockSkin("k2");
     persist();
   }

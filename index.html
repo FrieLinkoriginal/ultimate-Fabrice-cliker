@@ -473,15 +473,7 @@ body{transition:background-color .6s}
     syncBank();
   }
   function spawnDeathText(){
-    var el=document.createElement("div");
-    el.className="death-pop";
-    el.textContent="Fabrice est mort";
-    var dx = (Math.random() - 0.5) * 180;
-    var dy = (Math.random() - 0.5) * 110;
-    el.style.setProperty("--dx", dx + "px");
-    el.style.setProperty("--dy", dy + "px");
-    document.body.appendChild(el);
-    setTimeout(function(){el.remove();}, 1350);
+    // Popup supprimée : elle doublait l'effet visuel sans ajouter de gameplay.
   }
   var TOTAL_ACHIEVEMENTS = ACH.length + HID.length;
   function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return c;}

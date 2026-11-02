@@ -2,6 +2,18 @@
 
 Jeu en HTML pur (`index.html`) avec système de scores compatible GitHub Pages.
 
+## Supabase
+Le classement peut utiliser la table Supabase définie dans [`supabase/scores.sql`](./supabase/scores.sql). Exécute ce fichier dans le SQL Editor de ton projet Supabase, puis définis ces variables avant le chargement de `supabase/scores.js` dans `index.html` :
+
+```html
+<script>
+  window.FABRICE_SUPABASE_URL = "https://xxxxx.supabase.co";
+  window.FABRICE_SUPABASE_ANON_KEY = "ta_cle_anon_publique";
+</script>
+```
+
+Le client `supabase/scores.js` est déjà chargé par la page. Seule la clé publique/anon convient au navigateur ; ne mets jamais la clé `service_role` dans le HTML.
+
 ## Solution fonctionnelle pour GitHub
 GitHub Pages est statique : il ne peut pas exécuter de vraie API backend sans configuration supplémentaire.
 

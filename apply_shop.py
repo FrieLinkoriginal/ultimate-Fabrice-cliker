@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Ajoute le magazinzin à Fabrice Clicker.
-
-Usage :  python apply_shop.py index.html
-(une sauvegarde index.html.bak est creee ; rien n'est ecrit si un repere est introuvable)
-"""
+"""Ajoute le magazinzin à Fabrice Clicker en utilisant les sprites existants dans files/."""
 import sys, shutil
+from pathlib import Path
 
-path = sys.argv[1] if len(sys.argv) > 1 else "index.html"
+path = Path(sys.argv[1] if len(sys.argv) > 1 else "index.html")
+src = path.read_text(encoding="utf-8")
 
 CSS = r'''
 /* ===== Magazinzin ===== */
@@ -23,7 +21,7 @@ CSS = r'''
 .shophead .alan{width:min(50%,250px)}
 .shophead .bankcol{width:min(42%,200px);display:flex;flex-direction:column;gap:6px}
 .bankcol .score{text-align:center;font-size:16px;padding:4px 6px}
-.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-items:start}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;align-items:start}
 .item{display:flex;flex-direction:column;gap:6px;background:var(--face);padding:6px;border:2px solid;border-color:#fff #404040 #404040 #fff}
 .item img{display:block;width:100%;height:auto;image-rendering:pixelated}
 .item .b95{font-size:15px}
@@ -37,18 +35,17 @@ CSS = r'''
 
 HTML_TOP = r'''<div class="score" id="bankbox" hidden>Clik bank : <b id="bank">0</b></div>'''
 
-HTML_FIXED = r'''<button class="chair" id="chair" type="button" hidden aria-label="Ouvrir le magazinzin"><img src="assets/shop/chaise.png" alt="" draggable="false"></button>
+HTML_FIXED = r'''<button class="chair" id="chair" type="button" hidden aria-label="Ouvrir le magazinzin"><img src="files/chaise.png" alt="" draggable="false"></button>
 <div class="loopbox" id="loopbox" hidden>
   <div class="tb2"><span>Boucle</span></div>
   <div class="lb">
-    <button class="b95" id="loopbtn" type="button" aria-pressed="false">Boucle</button>
+    <button class="b95" id="loopbtn" type="button" aria-pressed="false">Activer la boucle</button>
     <input id="loopname" maxlength="40" placeholder="Pseudo pour le top 5" autocomplete="off" aria-label="Pseudo pour la boucle">
   </div>
 </div>
 '''
 
 SHOP_JS = r'''/* ===== Magazinzin ===== */
-/* Réglages : probabilités (0.001 = 0,1 point de pourcentage) */
 var DEATH_BASE=0.10,HEART_STEP=0.001,DBL_STEP=0.01;
 function deathChance(){return Math.max(0,DEATH_BASE-HEART_STEP*save.heart);}
 function dblChance(){return DBL_STEP*save.dbl;}
@@ -70,7 +67,6 @@ function syncShop(){
   loopbtn.setAttribute("aria-pressed",save.loopOn?"true":"false");
   bankEl.textContent=save.bank;
 }
-/* Tope là : ouvre le magazinzin la premiere fois */
 function openShopDoor(){
   if(save.shop)return;
   save.shop=1;persist();syncShop();
@@ -86,19 +82,19 @@ function buy(it){
 function openShop(){
   unlock("shop");
   var v=document.createElement("div");v.className="veil shopveil";
-  v.innerHTML='<div class="panel big" role="dialog" aria-label="Magazinzin"><div class="tb2"><span>Magazinzin</span><button type="button" aria-label="Fermer">x</button></div>'+
-    '<div class="shopbody"><div class="shophead"><img class="alan" src="assets/shop/alan.png" alt="Alan, le vendeur" draggable="false">'+
-    '<div class="bankcol"><img src="assets/shop/bank.png" alt="Clik bank" draggable="false"><div class="score">Clik bank : <b class="bk">0</b></div></div></div>'+
-    '<div class="shopgrid"></div></div></div>';
+  v.innerHTML='<div class=\"panel big\" role=\"dialog\" aria-label=\"Magazinzin\"><div class=\"tb2\"><span>Magazinzin</span><button type=\"button\" aria-label=\"Fermer\">x</button></div>'+
+    '<div class=\"shopbody\"><div class=\"shophead\"><img class=\"alan\" src=\"files/alan.png\" alt=\"Alan, le vendeur\" draggable=\"false\">'+
+    '<div class=\"bankcol\"><img src=\"files/bank.png\" alt=\"Clik bank\" draggable=\"false\"><div class=\"score\">Clik bank : <b class=\"bk\">0</b></div></div></div>'+
+    '<div class=\"shopgrid\"></div></div></div>';
   var grid=v.querySelector(".shopgrid"),bk=v.querySelector(".bk");
   function draw(){
     bk.textContent=save.bank;grid.innerHTML="";
     ITEMS.forEach(function(it){
       var own=owned(it),maxed=own>=it.max,lack=it.price-save.bank;
       var card=document.createElement("div");card.className="item";
-      var im=new Image();im.src="assets/shop/"+it.img;im.alt=it.name;im.draggable=false;
+      var im=new Image();im.src="files/"+it.img;im.alt=it.name;im.draggable=false;
       var b=document.createElement("button");b.type="button";b.className="b95";
-      var label=maxed?(it.max>1?"Complet "+own+"/"+it.max:"Possédé \u2714"):(it.price?"Acheter - "+it.price:"Prendre - gratuit")+(it.max>1?" ("+own+"/"+it.max+")":"");
+      var label=maxed?(it.max>1?"Complet "+own+"/"+it.max:"Possédé ✔"):(it.price?"Acheter - "+it.price:"Prendre - gratuit")+(it.max>1?" ("+own+"/"+it.max+")":"");
       b.textContent=label;b.disabled=maxed||lack>0;
       var sm=document.createElement("small");
       sm.textContent=maxed?"":(lack>0?"Il te manque "+lack+" clics":"");
@@ -107,18 +103,18 @@ function openShop(){
     });
   }
   shopRedraw=draw;draw();
-  function close(){shopRedraw=null;v.remove();document.removeEventListener("keydown",esc);chair.focus();}
-  function esc(e){if(e.key==="Escape")close();}
-  v.addEventListener("click",function(e){if(e.target===v||(e.target.tagName==="BUTTON"&&e.target.parentNode.className==="tb2"))close();});
+  function close(){shopRedraw=null;v.remove();document.removeEventListener(\"keydown\",esc);chair.focus();}
+  function esc(e){if(e.key===\"Escape\")close();}
+  v.addEventListener("click",function(e){if(e.target===v||(e.target.tagName===\"BUTTON\"&&e.target.parentNode.className===\"tb2\"))close();});
   document.addEventListener("keydown",esc);
   document.body.appendChild(v);
   v.querySelector(".tb2 button").focus();
 }
 chair.addEventListener("click",openShop);
-/* Boucle : pas de high score, retour direct a Fabrice. Si le score est dans le top 5, il est inscrit avec le pseudo de la chat box */
+
 function loopFinish(){
   if(looping)return;looping=true;
-  var nm=loopname.value.trim().replace(/\s+/g," ");
+  var nm=loopname.value.trim().replace(/\\s+/g," ");
   function done(){looping=false;reset();}
   if(n<1||!nm||nm.toLowerCase()==="fabrice"){done();return;}
   load().then(function(){
@@ -130,48 +126,32 @@ function loopFinish(){
 }
 loopbtn.addEventListener("click",function(){save.loopOn=save.loopOn?0:1;persist();syncShop();});
 try{loopname.value=localStorage.getItem(NK)||"";}catch(e){}
-loopname.addEventListener("input",function(){try{localStorage.setItem(NK,loopname.value.trim());}catch(e){} });
+loopname.addEventListener("input",function(){try{localStorage.setItem(NK,loopname.value.trim());}catch(e){}});
 syncShop();
-
 '''
 
-# (ancien, nouveau) : chaque ancien doit apparaitre exactement une fois
 EDITS = [
- ('</style>', CSS + '</style>'),
- ('<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div>',
-  '<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div>' + HTML_TOP),
- ('<div class="veil hsveil" id="hs" hidden>', HTML_FIXED + '<div class="veil hsveil" id="hs" hidden>'),
- ('{id:"k7",name:"Fabrice drogue",src:"assets/skins/skin7.png"}',
-  '{id:"k7",name:"Fabrice drogue",src:"assets/skins/skin7.png"},\n    {id:"k8",name:"Golden Fabrice",src:"assets/skins/skin8.png"},\n    {id:"k9",name:"Nouveau Fabrice",src:"assets/skins/skin9.png"}'),
- ('{id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l\'image de Fabrice tout en bas de la page"}',
-  '{id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l\'image de Fabrice tout en bas de la page"},\n    {id:"shop",secret:1,t:"Client",d:"Ouvrir le magazinzin"}'),
- ('save={u:{},sk:{},skin:"",last:-1,streak:0};',
-  'save={u:{},sk:{},skin:"",last:-1,streak:0,bank:0,shop:0,loop:0,loopOn:0,heart:0,dbl:0};'),
- ('if(typeof save.skin!=="string")save.skin="";',
-  'if(typeof save.skin!=="string")save.skin="";\n  ["bank","shop","loop","loopOn","heart","dbl"].forEach(function(k){if(typeof save[k]!=="number")save[k]=0;});\n  if(save.u.hand)save.shop=1;'),
- ('n++;out.textContent=n;play((n>10?0.45:0.6+Math.random()*1.2)*pitch);anim();',
-  'var add=Math.random()<dblChance()?2:1;for(var kk=0;kk<add;kk++){n++;if(n%10===0&&n<=100)unlock("s"+n);}save.bank+=add;persist();refreshBank();out.textContent=n;play((n>10?0.45:0.6+Math.random()*1.2)*pitch);anim();'),
- ('setBg(n);if(n%10===0&&n<=100)unlock("s"+n);', 'setBg(n);'),
- ('if(Math.random()<0.10){', 'if(Math.random()<deathChance()){'),
- ('setTimeout(function(){thud();fab.style.visibility="hidden";showHS();},880);',
-  'setTimeout(function(){thud();fab.style.visibility="hidden";if(save.loop&&save.loopOn)loopFinish();else showHS();},880);'),
- ('unlock("hand");', 'unlock("hand");openShopDoor();'),
- ('/* Image à télécharger tout en bas de la page */', SHOP_JS + '/* Image à télécharger tout en bas de la page */'),
+    ("</style>", CSS + "</style>"),
+    ('<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div>', '<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div>' + HTML_TOP),
+    ('<div class="veil hsveil" id="hs" hidden>', HTML_FIXED + '<div class="veil hsveil" id="hs" hidden>'),
+    ('{id:"k7",name:"Fabrice drogue",src:"assets/skins/skin7.png"}', '{id:"k7",name:"Fabrice drogue",src:"assets/skins/skin7.png"},\\n    {id:"k8",name:"Golden Fabrice",src:"files/golden-fabrice.png"},\\n    {id:"k9",name:"Nouveau Fabrice",src:"files/nouveau-fabrice.png"}'),
+    ('{id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l\\'image de Fabrice tout en bas de la page"}', '{id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l\\'image de Fabrice tout en bas de la page"},\\n    {id:"shop",secret:1,t:\"Client\",d:\"Ouvrir le magazinzin\"}'),
+    ('var KEY="fabrice-clicker-save",save={u:{},sk:{},skin:"",last:-1,streak:0};', 'var KEY="fabrice-clicker-save",save={u:{},sk:{},skin:"",last:-1,streak:0,bank:0,shop:0,loop:0,loopOn:0,heart:0,dbl:0};'),
+    ('if(typeof save.skin!=="string")save.skin="";', 'if(typeof save.skin!=="string")save.skin="";\\n  ["bank","shop","loop","loopOn","heart","dbl"].forEach(function(k){if(typeof save[k]!=="number")save[k]=0;});\\n  if(save.u.hand)save.shop=1;'),
+    ('n++;out.textContent=n;play((n>10?0.45:0.6+Math.random()*1.2)*pitch);anim();\\n    setBg(n);if(n%10===0&&n<=100)unlock("s"+n);\\n    if(Math.random()<0.10){', 'var add=Math.random()<dblChance()?2:1;for(var kk=0;kk<add;kk++){n++;if(n%10===0&&n<=100)unlock(\"s\"+n);}save.bank+=add;persist();refreshBank();out.textContent=n;play((n>10?0.45:0.6+Math.random()*1.2)*pitch);anim();\\n    setBg(n);\\n    if(Math.random()<deathChance()){'),
+    ('setTimeout(function(){thud();fab.style.visibility="hidden";showHS();},880);', 'setTimeout(function(){thud();fab.style.visibility="hidden";if(save.loop&&save.loopOn)loopFinish();else showHS();},880);'),
+    ('unlock("hand");\\n    hit(1,wiggle);', 'unlock("hand");\\n    shopOpenDoor();\\n    hit(1,wiggle);'),
+    ('/* Image à télécharger tout en bas de la page */', SHOP_JS + '/* Image à télécharger tout en bas de la page */'),
 ]
 
-with open(path, encoding="utf-8", newline="") as f:
-    src = f.read()
-
-bad = [(o[:70], src.count(o)) for o, _ in EDITS if src.count(o) != 1]
+bad = [(o[:90], src.count(o)) for o, _ in EDITS if src.count(o) != 1]
 if bad:
-    print("Patch annule, reperes introuvables ou en double :")
-    for o, c in bad:
-        print("  %d x  %s" % (c, o))
+    print("Patch annulé : repères introuvables ou en double :", bad)
     sys.exit(1)
 
-shutil.copyfile(path, path + ".bak")
+shutil.copyfile(path, path.with_suffix(path.suffix + ".bak"))
 for old, new in EDITS:
     src = src.replace(old, new, 1)
-with open(path, "w", encoding="utf-8", newline="") as f:
-    f.write(src)
-print("OK : %s patche (sauvegarde : %s.bak)" % (path, path))
+
+path.write_text(src, encoding="utf-8")
+print("OK : index.html patche avec le magazinzin.")

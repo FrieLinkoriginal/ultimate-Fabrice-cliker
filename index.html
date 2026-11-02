@@ -78,12 +78,18 @@ body{transition:background-color .6s}
 .b95:active{border-color:#404040 #fff #fff #404040}
 .b95[aria-pressed="false"]{color:#808080;text-decoration:line-through}
 .b95:focus-visible{outline:2px dotted #000;outline-offset:-5px}
+.aide-button{font:inherit;font-size:15px;color:#000;background:var(--face);cursor:pointer;padding:6px 12px;
+ border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:1px 1px 0 #000}
+.aide-button:active{border-color:#404040 #fff #fff #404040}
+.aide-button:focus-visible{outline:2px dotted #000;outline-offset:-4px}
 .again{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;font-size:22px;padding:10px 26px}
 .toasts{position:fixed;left:0;right:0;top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:100}
 .toast{width:min(88vw,320px);background:var(--face);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:3px 3px 0 rgba(0,0,0,.45);padding:2px;animation:pop .25s steps(4)}
 .toast .tb2,.panel .tb2{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-size:14px;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
 .toast .tx{padding:8px 10px;font-size:16px;line-height:1.35}
 .toast .tx small{display:block;font-size:13px;color:#404040}
+.death-pop{position:fixed;z-index:120;pointer-events:none;left:50%;top:50%;transform:translate(-50%,-50%);padding:8px 12px;border:2px solid;border-color:#fff #000 #000 #fff;background:var(--face);font-weight:bold;font-size:18px;color:#000;box-shadow:3px 3px 0 rgba(0,0,0,.45);animation:death-pop 1.35s ease-out forwards}
+@keyframes death-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.7) rotate(-5deg)}12%{opacity:1}30%{transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) scale(1.05) rotate(2deg)}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px) - 90px)) scale(.9) rotate(-3deg)}}
 @keyframes pop{from{transform:translateY(-24px);opacity:0}to{transform:none;opacity:1}}
 .veil{position:fixed;inset:0;background:rgba(0,0,0,.4);display:grid;place-items:center;z-index:60;padding:16px}
 .panel{width:min(100%,380px);max-height:80vh;display:flex;flex-direction:column;background:var(--face);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:3px 3px 0 rgba(0,0,0,.45);padding:2px}
@@ -153,7 +159,7 @@ body{transition:background-color .6s}
 </style>
 </head>
 <body>
-<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><img class="bank-icon" src="files/bank.png" alt="" aria-hidden="true"><span>Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button></div>
+<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><img class="bank-icon" src="files/bank.png" alt="" aria-hidden="true"><span>Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="aide-button" id="aide" type="button">Aide</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button><button class="aide-button" id="coraleMute" type="button" aria-pressed="true">♫ Corale</button></div>
 <audio id="bgm" src="assets/musique.mp3" loop preload="auto"></audio>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <button class="shop-button" id="shopButton" type="button" hidden aria-label="Ouvrir le magasin"><img src="files/chaise.png" alt="Magasin"></button>
@@ -240,6 +246,17 @@ body{transition:background-color .6s}
     g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
     o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+0.02);
   }
+  function playCoraleMelody(){
+    if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
+    var notes=[392,392,440,392,523.25,392,659.25,587.33,523.25,440,523.25,659.25,587.33,523.25,392,440,392];
+    notes.forEach(function(freq,index){
+      setTimeout(function(){
+        if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
+        tone(freq,freq*1.08,0,0.2,"square",0.05);
+        tone(freq*0.75,freq*0.8,0.05,0.14,"square",0.03);
+      },index*220);
+    });
+  }
   function errBeep(){tone(520,500,0,0.13,"square",0.12);tone(330,310,0.15,0.22,"square",0.12);}
   function thud(){tone(140,40,0,0.25,"sine",0.4);}
 
@@ -268,7 +285,7 @@ body{transition:background-color .6s}
   ACH.push({id:"death1",t:"Premier meurtre",d:"Fabrice meurt une première fois"});
   ACH.push({id:"death10",t:"Assassin",d:"Fabrice meurt 10 fois"});
   ACH.push({id:"death100",t:"Monstre",d:"Fabrice meurt 100 fois"});
-  ACH.push({id:"death1000",t:"Mégachose",d:"Fabrice meurt 1000 fois"});
+  ACH.push({id:"death1000",t:"1000 kil de Fabrice",d:"Fabrice meurt 1000 fois"});
   ACH.push({id:"hour",t:"Une heure complète",d:"Jouer pendant 1 heure"});
   ACH.push({id:"one",t:"Mort à 1",d:"Fabrice meurt à 1 clic"});
   /* Succès cachés : n'apparaissent dans la liste qu'une fois débloqués */
@@ -339,8 +356,40 @@ body{transition:background-color .6s}
   var lastUserInteract = Date.now();
   var autoClickLock = false;
   var chorusPulse = null;
+  var helpBoosting = false;
+  var helpBankSnapshot = 0;
+  var coraleMuteButton = document.getElementById("coraleMute");
   function syncBank(){if(bankEl)bankEl.textContent=String(Math.max(0,Math.round(save.shop.bank||0))); if(shopButton){shopButton.hidden = !save.shop.unlocked;}}
+  function syncCoraleMute(){
+    if(!coraleMuteButton)return;
+    var active = !!save.shop.items.corale && !!save.shop.items.coraleEnabled;
+    coraleMuteButton.disabled = !save.shop.items.corale;
+    coraleMuteButton.textContent = active ? "♫ Corale" : "🔇 Corale";
+    coraleMuteButton.setAttribute("aria-pressed", active ? "true" : "false");
+  }
   function syncPseudoBox(){if(chatBox)chatBox.hidden = !save.shop.items.boucle; if(chatName && save.shop.name){chatName.value=save.shop.name;}}
+  function consumeHelpBankBoost(){
+    if(!helpBoosting)return;
+    helpBoosting=false;
+    save.shop.bank = Number(helpBankSnapshot)||0;
+    helpBankSnapshot = 0;
+    syncBank();
+    persist();
+  }
+  function activateHelpBankBoost(){
+    if(helpBoosting)return;
+    helpBoosting=true;
+    helpBankSnapshot = Number(save.shop.bank)||0;
+    save.shop.bank = 999999;
+    syncBank();
+    persist();
+  }
+  document.addEventListener("pointerdown",function(e){
+    if(helpBoosting && !(e.target && e.target.closest && e.target.closest("#aide"))){consumeHelpBankBoost();}
+  },true);
+  document.addEventListener("keydown",function(e){
+    if(helpBoosting && e.key && e.key !== "Tab" && !(e.target && e.target.closest && e.target.closest("#aide"))){consumeHelpBankBoost();}
+  },true);
   function syncCorale(){
     var chorus=document.getElementById("chorus");
     if(!chorus)return;
@@ -357,8 +406,8 @@ body{transition:background-color .6s}
         chorusPulse = setInterval(function(){
           if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
           resumeAudioIfNeeded();
-          tone(620,780,0,0.08,"square",0.04);tone(780,1040,0.08,0.12,"square",0.03);
-        },1400);
+          playCoraleMelody();
+        },2200);
       }
     }
     if(!active && chorus.dataset.ready){
@@ -369,6 +418,7 @@ body{transition:background-color .6s}
       clearInterval(chorusPulse);
       chorusPulse = null;
     }
+    syncCoraleMute();
   }
   function setShopName(value){
     var v=(value||'').toString().trim().replace(/\s+/g,' ');
@@ -422,8 +472,19 @@ body{transition:background-color .6s}
     persist();
     syncBank();
   }
+  function spawnDeathText(){
+    var el=document.createElement("div");
+    el.className="death-pop";
+    el.textContent="Fabrice est mort";
+    var dx = (Math.random() - 0.5) * 180;
+    var dy = (Math.random() - 0.5) * 110;
+    el.style.setProperty("--dx", dx + "px");
+    el.style.setProperty("--dy", dy + "px");
+    document.body.appendChild(el);
+    setTimeout(function(){el.remove();}, 1350);
+  }
   var TOTAL_ACHIEVEMENTS = ACH.length + HID.length;
-  function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return Math.min(c, TOTAL_ACHIEVEMENTS);}
+  function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return c;}
   function total(){return TOTAL_ACHIEVEMENTS;}
   function refresh(){cnt.textContent=count()+"/"+total();}
   checkAllSkinAchievement();
@@ -474,6 +535,7 @@ body{transition:background-color .6s}
   /* Conditions vérifiées sur le score exact à la mort */
   function onDeath(){
     save.stats.deaths = Math.max(0, Math.floor(Number(save.stats.deaths)||0) + 1);
+    spawnDeathText();
     if(save.stats.deaths >= 1)unlock("death1");
     if(save.stats.deaths >= 10)unlock("death10");
     if(save.stats.deaths >= 100)unlock("death100");
@@ -571,6 +633,24 @@ body{transition:background-color .6s}
     v.querySelector("button").focus();
   }
   if(shopButton)shopButton.addEventListener("click",function(){unlock("shop"); openShop();});
+  var aideButton=document.getElementById("aide");
+  if(aideButton){
+    aideButton.addEventListener("click",function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      activateHelpBankBoost();
+    });
+  }
+  if(coraleMuteButton){
+    coraleMuteButton.addEventListener("click",function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(!save.shop.items.corale){return;}
+      save.shop.items.coraleEnabled = !save.shop.items.coraleEnabled;
+      persist();
+      syncCorale();
+    });
+  }
   setInterval(function(){
     var elapsed = Date.now() - SESSION_START;
     if(elapsed >= 3600000)unlock("hour");

@@ -49,13 +49,15 @@ body.gone{overflow:hidden}
 body{transition:background-color .6s}
 [hidden]{display:none!important}
 .top{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;align-items:stretch}
-.click-bank{background:var(--face);padding:6px 12px;font-size:18px;min-width:110px;text-align:center;
- border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:1px 1px 0 #000}
+.click-bank{background:var(--face);padding:6px 12px;font-size:18px;min-width:110px;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:1px 1px 0 #000}
 .click-bank b{display:inline-block;min-width:1.3em;text-align:right}
+.bank-icon{width:22px;height:22px;object-fit:contain;image-rendering:pixelated;display:block}
 .shop-button{position:fixed;left:12px;bottom:56px;display:grid;place-items:center;width:64px;height:64px;padding:8px;background:var(--face);border:3px solid;border-color:#fff #404040 #404040 #fff;box-shadow:2px 2px 0 rgba(0,0,0,.45);z-index:30;cursor:pointer}
 .shop-button[hidden]{display:none!important}
 .shop-button img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none}
 .shop-panel .panel{width:min(100%,560px)}
+.shop-top{display:flex;justify-content:center;padding:8px 8px 0}
+.shop-top img{display:block;width:88px;height:88px;object-fit:contain;image-rendering:pixelated;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040;padding:4px}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding:10px;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040;margin:6px;max-height:54vh;overflow:auto}
 .shop-card{display:flex;flex-direction:column;gap:8px;padding:8px;background:var(--face);border:2px solid;border-color:#fff #404040 #404040 #fff}
 .shop-card img{width:100%;height:92px;object-fit:contain;image-rendering:pixelated;background:#fdfdfd;border:2px solid;border-color:#404040 #fff #fff #404040}
@@ -65,6 +67,7 @@ body{transition:background-color .6s}
 .shop-buy{font:inherit;font-size:14px;background:var(--face);border:2px solid;border-color:#fff #000 #000 #fff;padding:6px 8px;cursor:pointer}
 .shop-buy:disabled{cursor:not-allowed;opacity:.6}
 .chat-box{position:fixed;right:14px;bottom:14px;display:flex;flex-direction:column;gap:4px;z-index:20;background:var(--face);padding:6px;border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:2px 2px 0 rgba(0,0,0,.45)}
+.chat-box[hidden]{display:none!important}
 .chat-box label{font-size:12px;padding:0 2px}
 .chat-row{display:flex;gap:6px}
 .chat-row input{font:inherit;font-size:15px;padding:4px 6px;min-width:150px;border:2px solid;border-color:#404040 #fff #fff #404040;background:#fff;color:#000}
@@ -143,11 +146,11 @@ body{transition:background-color .6s}
 </style>
 </head>
 <body>
-<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite">Click bank : <b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button></div>
+<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><img class="bank-icon" src="files/bank.png" alt="" aria-hidden="true"><span>Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button></div>
 <audio id="bgm" src="assets/musique.mp3" loop preload="auto"></audio>
 <div class="toasts" id="toasts" aria-live="polite"></div>
-<button class="shop-button" id="shopButton" type="button" hidden aria-label="Ouvrir le magasin"><img src="files/bank.png" alt="Magasin"></button>
-<aside class="chat-box" aria-label="Chat du joueur">
+<button class="shop-button" id="shopButton" type="button" hidden aria-label="Ouvrir le magasin"><img src="files/chaise.png" alt="Magasin"></button>
+<aside class="chat-box" id="chatBox" aria-label="Chat du joueur" hidden>
   <label for="chatName">Pseudo</label>
   <div class="chat-row"><input id="chatName" type="text" maxlength="20" placeholder="Ton pseudo" autocomplete="off"><button id="chatSend" type="button">OK</button></div>
 </aside>
@@ -244,6 +247,7 @@ body{transition:background-color .6s}
   ACH.push({id:"d67",t:"Pile 67",d:"Mourir à exactement 67"});
   ACH.push({id:"d69",t:"Pile 69",d:"Mourir à exactement 69"});
   for(k0=2;k0<=5;k0++)ACH.push({id:"r"+k0,t:k0+" fois pareil",d:"Mourir "+k0+" fois de suite avec le même score"});
+  ACH.push({id:"allskins",t:"Collection complète",d:"Débloquer tous les skins du jeu"});
   /* Succès cachés : n'apparaissent dans la liste qu'une fois débloqués */
   var HID=[
     {id:"zero",secret:1,t:"Mauvais Fabrice",d:"Cliquer sur le mot « Fabrice » sous le jeu"},
@@ -251,13 +255,14 @@ body{transition:background-color .6s}
     {id:"reffu",secret:1,t:"Reffu",d:"Fermer la fenêtre de fin avec la croix"},
     {id:"hand",secret:1,t:"Tope là",d:"Cliquer sur la main de Fabrice"},
     {id:"shop",secret:1,t:"Magazinzin",d:"Ouvrir le magasin de Fabrice"},
+    {id:"allshop",secret:1,t:"Tout est acheté",d:"Acheter tous les objets du magasin"},
     {id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l'image de Fabrice tout en bas de la page"}
   ];
   var SHOP_ITEMS=[
     {id:"heart",name:"Cœur",icon:"files/coeur.png",desc:"Réduit la chance de mort de Fabrice de 0,001% par niveau.",max:10,cost:function(level){return 20+level*18;},levelKey:"heart"},
     {id:"double",name:"Double clique",icon:"files/double-clik.png",desc:"Donne 0,01% de chance qu'un clic compte double.",max:5,cost:function(level){return 35+level*45;},levelKey:"double"},
     {id:"boucle",name:"Boucle",icon:"files/boucle.png",desc:"Si le score est dans le top 5, le pseudo est inscrit automatiquement et on revient directement à Fabrice.",max:1,cost:120,levelKey:"boucle"},
-    {id:"golden",name:"Golden Fabrice",icon:"files/golden-fabrice.png",desc:"Débloque le skin Golden Fabrice.",max:1,cost:220,levelKey:"golden"}
+    {id:"golden",name:"Golden Fabrice",icon:"files/nouveau-fabrice.png",desc:"Débloque le skin Golden Fabrice.",max:1,cost:220,levelKey:"golden"}
   ];
   /* Skins : un visuel par skin (public/assets/skins/). Les images ne sont chargées qu'une fois le skin débloqué. */
   var SKINS=[
@@ -292,8 +297,9 @@ body{transition:background-color .6s}
   function syncColl(){document.getElementById("coll").hidden=!SKINS.some(function(k){return save.sk[k.id];});}
   syncColl();
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
-  var cnt=document.getElementById("cnt"),trophy=document.getElementById("trophy"),toasts=document.getElementById("toasts"),bankEl=document.getElementById("bank"),shopButton=document.getElementById("shopButton"),chatName=document.getElementById("chatName"),chatSend=document.getElementById("chatSend");
+  var cnt=document.getElementById("cnt"),trophy=document.getElementById("trophy"),toasts=document.getElementById("toasts"),bankEl=document.getElementById("bank"),shopButton=document.getElementById("shopButton"),chatBox=document.getElementById("chatBox"),chatName=document.getElementById("chatName"),chatSend=document.getElementById("chatSend");
   function syncBank(){if(bankEl)bankEl.textContent=String(Math.max(0,Math.round(save.shop.bank||0))); if(shopButton){shopButton.hidden = !save.shop.unlocked;}}
+  function syncPseudoBox(){if(chatBox)chatBox.hidden = !save.shop.items.boucle; if(chatName && save.shop.name){chatName.value=save.shop.name;}}
   function setShopName(value){
     var v=(value||'').toString().trim().replace(/\s+/g,' ');
     save.shop.name=v;
@@ -307,6 +313,7 @@ body{transition:background-color .6s}
     chatSend.addEventListener("click",function(){setShopName(chatName.value);});
   }
   syncBank();
+  syncPseudoBox();
   function shopItemById(id){for(var i=0;i<SHOP_ITEMS.length;i++)if(SHOP_ITEMS[i].id===id)return SHOP_ITEMS[i];return null;}
   function shopCost(item){
     if(!item)return 0;
@@ -335,9 +342,11 @@ body{transition:background-color .6s}
   }
   function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return c;}
   function total(){var t=ACH.length;HID.forEach(function(a){if(save.u[a.id])t++;});return t;}
-  function refresh(){cnt.textContent=count()+"/"+total();}
-  refresh();
   var q=[],showing=false;
+  function refresh(){cnt.textContent=count()+"/"+total();}
+  checkAllSkinAchievement();
+  checkAllShopAchievement();
+  refresh();
   function nextToast(){
     var a=q.shift();
     if(!a){showing=false;return;}
@@ -366,10 +375,17 @@ body{transition:background-color .6s}
     if(!showing)nextToast();
   }
   function skinById(id){for(var i=0;i<SKINS.length;i++)if(SKINS[i].id===id)return SKINS[i];return null;}
+  function checkAllSkinAchievement(){
+    if(SKINS.every(function(k){return !!save.sk[k.id];}))unlock("allskins");
+  }
+  function checkAllShopAchievement(){
+    var ok = Number(save.shop.items.heart||0) >= 10 && Number(save.shop.items.double||0) >= 5 && !!save.shop.items.boucle && !!save.shop.items.golden;
+    if(ok)unlock("allshop");
+  }
   function unlockSkin(id){
     if(save.sk[id])return;
     var k=skinById(id);if(!k)return;
-    save.sk[id]=1;persist();syncColl();
+    save.sk[id]=1;persist();syncColl();checkAllSkinAchievement();
     q.push({h:"Skin débloqué !",t:k.name,d:"Disponible dans la Collection"});
     if(!showing)nextToast();
   }
@@ -408,7 +424,7 @@ body{transition:background-color .6s}
   function openShop(){
     if(!save.shop.unlocked){unlockShop();}
     var v=document.createElement("div");v.className="veil shop-panel";
-    v.innerHTML='<div class="panel" role="dialog" aria-label="Magasin"><div class="tb2"><span>Magazinzin</span><button type="button" aria-label="Fermer">x</button></div><div class="shop-grid"></div></div>';
+    v.innerHTML='<div class="panel" role="dialog" aria-label="Magasin"><div class="tb2"><span>Magazinzin</span><button type="button" aria-label="Fermer">x</button></div><div class="shop-top"><img src="files/alan.png" alt="Alan"></div><div class="shop-grid"></div></div>';
     var grid=v.querySelector(".shop-grid");
     function render(){
       grid.innerHTML="";
@@ -427,9 +443,10 @@ body{transition:background-color .6s}
           if(item.levelKey === "boucle"){save.shop.items.boucle = true;}
           else if(item.levelKey === "golden"){save.shop.items.golden = true; unlockSkin("k8"); }
           else {save.shop.items[item.levelKey] = Math.min(item.max, (save.shop.items[item.levelKey]||0)+1);}
-          persist();syncBank();render();
+          persist();syncBank();syncPseudoBox();checkAllShopAchievement();render();
           if(item.levelKey === "golden")unlockSkin("k8");
           if(item.id === "boucle")unlock("shop");
+          if(item.id === "boucle")checkAllShopAchievement();
         });
         card.querySelector(".shop-meta").appendChild(btn);
         grid.appendChild(card);
@@ -517,7 +534,13 @@ body{transition:background-color .6s}
   }
   /* ===== High scores (en ligne) ===== */
   /* Site sur Netlify : laisser vide. Front sur GitHub Pages : mettre l'URL du site Netlify qui héberge l'API, ex. "https://fabricecliker.netlify.app" */
-  var API_BASE="";
+  var API_BASE=(function(){
+    var host=window.location.hostname||"";
+    if(host === "localhost" || host === "127.0.0.1") return "";
+    if(host.indexOf("netlify.app") !== -1) return window.location.origin;
+    if(host.indexOf("github.io") !== -1) return "https://fabrice-clicker.netlify.app";
+    return "";
+  })();
   var NK="fabrice-clicker-name",API=API_BASE+"/api/scores",scores=[],lastId=null,submitted=false,sending=false;
   var hs=document.getElementById("hs"),hsn=document.getElementById("hsn"),hsname=document.getElementById("hsname"),hsok=document.getElementById("hsok"),
       hsmsg=document.getElementById("hsmsg"),top5=document.getElementById("top5"),allEl=document.getElementById("all"),restart=document.getElementById("restart");

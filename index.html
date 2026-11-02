@@ -428,9 +428,8 @@ body{transition:background-color .6s}
     try{localStorage.setItem(NK,v);}catch(e){}
     persist();
   }
-  function detectAutoClick(){
-    var now = Date.now();
-    if(now - lastUserInteract > 1200 && !autoClickLock){
+  function detectAutoClick(event){
+    if(event && event.isTrusted === false && !autoClickLock){
       autoClickLock = true;
       unlock("cheater");
     }
@@ -472,7 +471,17 @@ body{transition:background-color .6s}
     persist();
     syncBank();
   }
+  function showCheaterDeathDialog(){
+    var title=document.getElementById("t");
+    var msg=document.querySelector(".dlg .msg");
+    if(title)title.textContent="Fabrice ne fonctionne plus";
+    if(msg)msg.innerHTML="Erreur de fin de run<br>Fabrice a détecté un auto-click";
+  }
   function spawnDeathText(){
+    if(save.u.cheater){
+      showCheaterDeathDialog();
+      return;
+    }
     var el=document.createElement("div");
     el.className="death-pop";
     el.textContent="Fabrice est mort";
@@ -920,10 +929,6 @@ body{transition:background-color .6s}
   /* Un clic compte +1, avec 10% de chances de tuer Fabrice. pitch : 1 = voix normale, 2 = plus aigu */
   function hit(pitch,anim){
     if(dead)return false;
-    if(Date.now() - lastUserInteract > 1200 && !autoClickLock){
-      unlock("cheater");
-      autoClickLock = true;
-    }
     save.shop.bank = (Number(save.shop.bank)||0) + 1;
     syncBank();
     persist();
@@ -937,7 +942,12 @@ body{transition:background-color .6s}
     }
     return true;
   }
-  fab.addEventListener("click",function(){lastUserInteract = Date.now(); autoClickLock = false; hit(1,wiggle);});
+  fab.addEventListener("click",function(e){
+    lastUserInteract = Date.now();
+    autoClickLock = false;
+    detectAutoClick(e);
+    hit(1,wiggle);
+  });
   /* Fermeture de la fenêtre : Fabrice tombe */
   function fall(){
     if(fallen)return;

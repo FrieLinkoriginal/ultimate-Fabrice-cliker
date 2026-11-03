@@ -781,10 +781,10 @@ body{transition:background-color .6s}
     if(!SUPABASE_ENABLED)return Promise.reject(new Error("Le classement Supabase n’est pas configuré."));
     return OnlineScores.submit(name,score).then(function(row){
       lastId=row.id;
-      return OnlineScores.load();
-    }).then(function(rows){
-      setScores(rows);
-      return rows;
+      if(!scores.some(function(entry){return entry.id===row.id;})){
+        scores.push({id:row.id,name:row.name,s:row.s,t:Date.parse(row.t)||0});
+      }
+      return scores;
     });
   }
   function submitAuto(){

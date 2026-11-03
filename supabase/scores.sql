@@ -28,3 +28,5 @@ create policy "Ajouter un score valide"
     and lower(btrim(name)) <> 'fabrice'
     and score between 0 and 1000000
   );
+
+notify pgrst, 'reload schema';

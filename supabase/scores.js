@@ -28,13 +28,13 @@
   }
 
   function errorFrom(response) {
-    return response.json().then(function (body) {
+    return response.clone().json().catch(function () {
+      return {};
+    }).then(function (body) {
       throw new Error(
         (body && (body.message || body.details || body.hint)) ||
           "Erreur Supabase (" + response.status + ")"
       );
-    }, function () {
-      throw new Error("Erreur Supabase (" + response.status + ")");
     });
   }
 
@@ -43,6 +43,7 @@
       projectUrl = String(url || "").trim().replace(/\/+$/, "");
       projectUrl = projectUrl.replace(/\/rest\/v1$/i, "");
       publicKey = String(key || "").trim();
+
       if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(projectUrl)) {
         throw new Error("L'URL Supabase doit être de la forme https://xxxxx.supabase.co");
       }
@@ -62,7 +63,10 @@
         if (!response.ok) return errorFrom(response);
         return response.json();
       }).then(function (rows) {
-        return (rows || []).map(function (row) {
+        if (!Array.isArray(rows)) {
+          throw new Error("Supabase a renvoyé un classement invalide.");
+        }
+        return rows.map(function (row) {
           return {
             id: row.id,
             name: row.name,
@@ -91,7 +95,9 @@
         return response.json();
       }).then(function (rows) {
         var row = rows && rows[0];
-        if (!row) throw new Error("Supabase n'a pas renvoyé le score enregistré.");
+        if (!row) {
+          throw new Error("Supabase n'a pas renvoyé le score enregistré.");
+        }
         return { id: row.id, name: row.name, s: Number(row.score), t: row.created_at };
       });
     }

@@ -346,10 +346,14 @@ body{transition:background-color .6s}
   save.shop.items.double = Math.max(0,Math.min(5,Number(save.shop.items.double)||0));
   save.shop.items.boucle = !!save.shop.items.boucle;
   save.shop.items.boucleEnabled = save.shop.items.boucle ? (typeof save.shop.items.boucleEnabled === "boolean" ? save.shop.items.boucleEnabled : true) : false;
-  var legacyTrueGoldenOwned = !save.shop.version && !!save.shop.items.golden;
   save.shop.items.golden = !!save.shop.items.golden;
-  save.shop.items.trueGolden = !!save.shop.items.trueGolden || legacyTrueGoldenOwned;
-  save.shop.version = 2;
+  if(Number(save.shop.version)!==3){
+    save.shop.items.trueGolden=false;
+    delete save.sk.k9;
+    if(save.skin==="k9")save.skin="";
+  }
+  save.shop.items.trueGolden = !!save.shop.items.trueGolden;
+  save.shop.version = 3;
   save.shop.items.corale = !!save.shop.items.corale;
   save.shop.items.coraleEnabled = save.shop.items.corale ? (typeof save.shop.items.coraleEnabled === "boolean" ? save.shop.items.coraleEnabled : true) : false;
   /* Sauvegardes existantes : les exploits déjà réalisés donnent leur skin */

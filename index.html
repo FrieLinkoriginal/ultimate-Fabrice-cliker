@@ -24,7 +24,7 @@ body{margin:0;min-height:100vh;background:var(--desk);font-family:"DotGothic16",
 @keyframes wiggle{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-2.2%,-1%) rotate(-2deg)}50%{transform:translate(2%,.6%) rotate(1.8deg)}75%{transform:translate(-1%,-.6%) rotate(-1deg)}100%{transform:translate(0,0) rotate(0)}}
 @keyframes wiggle2{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(2.2%,-1%) rotate(2deg)}50%{transform:translate(-2%,.6%) rotate(-1.8deg)}75%{transform:translate(1%,-.6%) rotate(1deg)}100%{transform:translate(0,0) rotate(0)}}
 .stage.dead .fab{cursor:not-allowed;filter:saturate(.75)}
-.dlg{display:none;position:absolute;left:26.9%;top:53.4%;width:46.1%;background:var(--face);
+.dlg{display:none;position:absolute;left:26.9%;top:53.4%;width:46.1%;background:var(--face);transition:left .25s ease,top .25s ease;
  border:.5cqw solid;border-color:#fff #000 #000 #fff;box-shadow:.4cqw .4cqw 0 rgba(0,0,0,.45);padding:.5cqw}
 .stage.dead .dlg{display:block}
 .dlg.shake{animation:wiggle .25s steps(5)}
@@ -52,6 +52,8 @@ body{transition:background-color .6s}
 .click-bank{background:var(--face);padding:6px 12px;font-size:18px;min-width:110px;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:1px 1px 0 #000}
 .click-bank b{display:inline-block;min-width:1.3em;text-align:right}
 .bank-icon{width:22px;height:22px;object-fit:contain;image-rendering:pixelated;display:block}
+.bank-toggle{display:grid;place-items:center;flex:none;padding:0;border:0;background:transparent;cursor:pointer}
+.bank-toggle:focus-visible{outline:2px dotted #000;outline-offset:2px}
 .shop-button{position:fixed;left:12px;bottom:56px;display:grid;place-items:center;width:64px;height:64px;padding:8px;background:var(--face);border:3px solid;border-color:#fff #404040 #404040 #fff;box-shadow:2px 2px 0 rgba(0,0,0,.45);z-index:30;cursor:pointer}
 .shop-button[hidden]{display:none!important}
 .shop-button img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none}
@@ -162,7 +164,7 @@ body{transition:background-color .6s}
 </style>
 </head>
 <body>
-<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><img class="bank-icon" src="files/bank.png" alt="" aria-hidden="true"><span>Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button><button class="aide-button" id="coraleMute" type="button" aria-pressed="true" hidden>♫ Corale</button></div>
+<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><button class="bank-toggle" id="bankToggle" type="button" aria-label="Afficher le nombre de morts" aria-pressed="false"><img class="bank-icon" src="files/bank.png" alt=""></button><span id="bankLabel">Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button><button class="aide-button" id="coraleMute" type="button" aria-pressed="true" hidden>♫ Corale</button></div>
 <audio id="bgm" src="assets/musique.mp3" loop preload="auto"></audio>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <button class="shop-button" id="shopButton" type="button" hidden aria-label="Ouvrir le magasin"><img src="files/chaise.png" alt="Magasin"></button>
@@ -304,8 +306,8 @@ body{transition:background-color .6s}
   ACH.push({id:"death10",t:"Assassin",d:"Fabrice meurt 10 fois"});
   ACH.push({id:"death100",t:"Monstre",d:"Fabrice meurt 100 fois"});
   ACH.push({id:"death1000",t:"1000 kil de Fabrice",d:"Fabrice meurt 1000 fois"});
-  ACH.push({id:"hour",t:"Une heure complète",d:"Jouer pendant 1 heure"});
-  ACH.push({id:"one",t:"Mort à 1",d:"Fabrice meurt à 1 clic"});
+  ACH.push({id:"hour",t:"Gros porc!",d:"Jouer pendant 1 heure"});
+  ACH.push({id:"one",t:"Deja?",d:"Fabrice meurt à 1 clic"});
   /* Succès cachés : n'apparaissent dans la liste qu'une fois débloqués */
   var HID=[
     {id:"zero",secret:1,t:"Mauvais Fabrice",d:"Cliquer sur le mot « Fabrice » sous le jeu"},
@@ -314,17 +316,17 @@ body{transition:background-color .6s}
     {id:"hand",secret:1,t:"Hi five Fabrice",d:"Cliquer sur la main de Fabrice"},
     {id:"menteur",secret:1,t:"Menteur",d:"Mettre Fabrice comme pseudo"},
     {id:"shop",secret:1,t:"Magazinzin",d:"Ouvrir le magasin de Fabrice"},
-    {id:"alan",secret:1,t:"Alan",d:"Cliquer sur Alan dans le magasin"},
-    {id:"allshop",secret:1,t:"Tout est acheté",d:"Acheter tous les objets du magasin"},
+    {id:"alan",secret:1,t:"Salut Alan!",d:"Cliquer sur Alan dans le magasin"},
+    {id:"allshop",secret:1,t:"trop d'argen",d:"Acheter tous les objets du magasin"},
     {id:"trueEnding",secret:1,t:"Vraie fin",d:"Tuer Fabrice dans le combat"},
     {id:"mute",secret:1,t:"Silence",d:"Mettre la musique en sourdine"},
     {id:"lavage",secret:1,t:"Lavage de cerveaux",d:"Écouter la musique pendant 2 minutes"},
     {id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l'image de Fabrice tout en bas de la page"}
   ];
   var SHOP_ITEMS=[
-    {id:"heart",name:"Cœur",icon:"files/coeur.png",desc:"Réduit très légèrement la chance de mort, sans jamais la supprimer.",max:10,cost:function(level){return 20+level*18;},levelKey:"heart"},
+    {id:"heart",name:"Cœur",icon:"files/coeur.png",desc:"Réduit très légèrement la chance de mort.",max:10,cost:function(level){return 20+level*18;},levelKey:"heart"},
     {id:"double",name:"Double clique",icon:"files/double-clik.png",desc:"Donne 0,01% de chance qu'un clic compte double.",max:5,cost:function(level){return 35+level*45;},levelKey:"double"},
-    {id:"boucle",name:"Boucle",icon:"files/boucle.png",desc:"Si le score est dans le top 5, le pseudo est inscrit automatiquement et on revient directement à Fabrice.",max:1,cost:120,levelKey:"boucle"},
+    {id:"boucle",name:"Boucle",icon:"files/boucle.png",desc:"Si ton score entre dans le top 5, il est envoyé automatiquement ; sinon, Fabrice revient sans ouvrir l'écran du high score.",max:1,cost:120,levelKey:"boucle"},
     {id:"corale",name:"Corale",icon:"files/chorale%20shop.png",desc:"Des chanteurs apparaissent en bas de l'écran et doublent les clics de la Click bank.",max:1,cost:200,levelKey:"corale"},
     {id:"golden",name:"Golden Fabrice",icon:"files/golden%20icone.png",desc:"Débloque le skin Golden Fabrice.",max:1,cost:200,levelKey:"golden"},
     {id:"trueGolden",name:"True Golden",icon:"files/icone%20TrueGOLDEN%20fabrice.png",desc:"Débloque le skin True Golden après l'achat de tous les autres objets.",max:1,cost:1000,levelKey:"trueGolden"},
@@ -385,14 +387,12 @@ body{transition:background-color .6s}
   save.shop.items.coraleEnabled = save.shop.items.corale ? (typeof save.shop.items.coraleEnabled === "boolean" ? save.shop.items.coraleEnabled : true) : false;
   /* Sauvegardes existantes : les exploits déjà réalisés donnent leur skin */
   if(save.u.r2)save.sk.k2=1;
-  if(save.u.d67)save.sk.k6=1;
-  if(save.u.d69)save.sk.k7=1;
   if(save.shop.items.trueGolden)save.sk.k9=1;
   /* La Collection reste cachée tant qu'aucun skin n'est débloqué */
   function syncColl(){document.getElementById("coll").hidden=!SKINS.some(function(k){return save.sk[k.id];});}
   syncColl();
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
-  var cnt=document.getElementById("cnt"),trophy=document.getElementById("trophy"),toasts=document.getElementById("toasts"),bankEl=document.getElementById("bank"),shopButton=document.getElementById("shopButton"),heartButton=document.getElementById("heartButton"),chatBox=document.getElementById("chatBox"),chatName=document.getElementById("chatName"),chatSend=document.getElementById("chatSend");
+  var cnt=document.getElementById("cnt"),trophy=document.getElementById("trophy"),toasts=document.getElementById("toasts"),bankEl=document.getElementById("bank"),bankLabel=document.getElementById("bankLabel"),bankToggle=document.getElementById("bankToggle"),shopButton=document.getElementById("shopButton"),heartButton=document.getElementById("heartButton"),chatBox=document.getElementById("chatBox"),chatName=document.getElementById("chatName"),chatSend=document.getElementById("chatSend");
   var q=[],showing=false;
   var SESSION_START = Date.now();
   var MUSIC_LISTEN_MS = 0;
@@ -400,7 +400,17 @@ body{transition:background-color .6s}
   var chorusPulse = null;
   var coraleMelodyTimers = [];
   var coraleMuteButton = document.getElementById("coraleMute");
-  function syncBank(){if(bankEl)bankEl.textContent=String(Math.max(0,Math.round(save.shop.bank||0))); if(shopButton){shopButton.hidden = !save.shop.unlocked;}}
+  var showKillCount=false;
+  function syncBank(){
+    if(bankEl)bankEl.textContent=showKillCount?String(save.stats.deaths):String(Math.max(0,Math.round(save.shop.bank||0)));
+    if(bankLabel)bankLabel.textContent=showKillCount?"Kills de Fabrice : ":"Click bank : ";
+    if(bankToggle){
+      bankToggle.setAttribute("aria-pressed",showKillCount?"true":"false");
+      bankToggle.setAttribute("aria-label",showKillCount?"Afficher la Click bank":"Afficher le nombre de morts");
+    }
+    if(shopButton){shopButton.hidden = !save.shop.unlocked;}
+  }
+  if(bankToggle)bankToggle.addEventListener("click",function(){showKillCount=!showKillCount;syncBank();});
   function syncHeartButton(){if(heartButton)heartButton.hidden = !save.shop.items.heartCombat;}
   function syncCoraleMute(){
     if(!coraleMuteButton)return;
@@ -545,17 +555,24 @@ body{transition:background-color .6s}
     q.push({h:"Skin débloqué !",t:k.name,d:"Disponible dans la Collection"});
     if(!showing)nextToast();
   }
+  if(save.stats.deaths>=100)unlockSkin("k7");
   /* Conditions vérifiées sur le score exact à la mort */
   function onDeath(){
     save.stats.deaths = Math.max(0, Math.floor(Number(save.stats.deaths)||0) + 1);
+    syncBank();
     spawnDeathText();
     if(save.stats.deaths >= 1)unlock("death1");
     if(save.stats.deaths >= 10)unlock("death10");
     if(save.stats.deaths >= 100)unlock("death100");
     if(save.stats.deaths >= 1000)unlock("death1000");
     if(n===1){unlock("one");unlockSkin("k1");}
-    if(n===67){unlock("d67");unlockSkin("k6");}
-    if(n===69){unlock("d69");unlockSkin("k7");}
+    if(save.stats.deaths>=100)unlockSkin("k7");
+    if(n===67)unlock("d67");
+    if(n===69)unlock("d69");
+    if(save.shop.items.boucle){
+      dlg.style.left=(15+Math.random()*25)+"%";
+      dlg.style.top=(35+Math.random()*25)+"%";
+    }
     if(save.last===n)save.streak++;else save.streak=1;
     save.last=n;
     for(var k=2;k<=3;k++)if(save.streak>=k)unlock("r"+k);
@@ -590,7 +607,7 @@ body{transition:background-color .6s}
     v.innerHTML='<div class="panel" role="dialog" aria-label="Magasin"><div class="tb2"><span>Magazinzin</span><button type="button" aria-label="Fermer">x</button></div><div class="shop-top"><img src="files/alan.png" alt="Alan" id="alanFace"></div><div class="shop-grid"></div></div>';
     var grid=v.querySelector(".shop-grid");
     var alanFace=v.querySelector("#alanFace");
-    if(alanFace){alanFace.addEventListener("click",function(){unlock("alan");});}
+    if(alanFace){alanFace.addEventListener("click",function(){unlock("alan");unlockSkin("k6");});}
     function render(){
       grid.innerHTML="";
       SHOP_ITEMS.forEach(function(item){
@@ -740,6 +757,7 @@ body{transition:background-color .6s}
     n=0;dead=false;fallen=false;xhit.hidden=false;handhit.hidden=false;flip=false;out.textContent="0";
     fab.classList.remove("hit","hit2","fall");fab.style.visibility="";
     stage.classList.remove("dead");dlg.style.display="";
+    dlg.style.left="";dlg.style.top="";
     document.body.classList.remove("gone");
     hint.innerHTML=HINT_HTML;
     hs.hidden=true;setBg(0);
@@ -878,8 +896,11 @@ body{transition:background-color .6s}
     hint.textContent="";
     fab.classList.remove("hit","hit2");void fab.offsetWidth;
     fab.classList.add("fall");
-    if(save.shop.items.boucle && save.shop.items.boucleEnabled && scoreQualifiesTop5(n)){
-      setTimeout(function(){thud();fab.style.visibility="hidden";submitAuto();},880);
+    if(save.shop.items.boucle && save.shop.items.boucleEnabled){
+      setTimeout(function(){
+        thud();fab.style.visibility="hidden";
+        if(scoreQualifiesTop5(n))submitAuto();else reset();
+      },880);
       return;
     }
     setTimeout(function(){thud();fab.style.visibility="hidden";showHS();},880);

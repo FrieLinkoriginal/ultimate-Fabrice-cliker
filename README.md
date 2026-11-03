@@ -9,4 +9,6 @@ La table et ses règles de sécurité sont définies dans [`supabase/scores.sql`
 
 Seule une clé publique/Publishable convient au navigateur ; ne mets jamais une clé `service_role` dans le HTML.
 
+Au premier chargement de cette version, l'argent local et les succès 80, 90 et 100 sont remis à zéro. Le cœur se débloque après tous les succès qui ne dépendent pas du combat ; les succès au-dessus de 70 et la Vraie fin sont gagnés pendant le combat.
+
 Pour vider une fois le classement existant, exécute [`supabase/reset_scores.sql`](./supabase/reset_scores.sql) dans le SQL Editor Supabase avec un rôle administrateur.

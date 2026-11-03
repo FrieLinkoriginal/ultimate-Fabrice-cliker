@@ -322,13 +322,13 @@ body{transition:background-color .6s}
     {id:"coll",secret:1,t:"Collectionneur",d:"Trouver et télécharger l'image de Fabrice tout en bas de la page"}
   ];
   var SHOP_ITEMS=[
-    {id:"heart",name:"Cœur",icon:"files/coeur.png",desc:"Rend Fabrice immortel au niveau 10.",max:10,cost:function(level){return 20+level*18;},levelKey:"heart"},
+    {id:"heart",name:"Cœur",icon:"files/coeur.png",desc:"Réduit très légèrement la chance de mort, sans jamais la supprimer.",max:10,cost:function(level){return 20+level*18;},levelKey:"heart"},
     {id:"double",name:"Double clique",icon:"files/double-clik.png",desc:"Donne 0,01% de chance qu'un clic compte double.",max:5,cost:function(level){return 35+level*45;},levelKey:"double"},
     {id:"boucle",name:"Boucle",icon:"files/boucle.png",desc:"Si le score est dans le top 5, le pseudo est inscrit automatiquement et on revient directement à Fabrice.",max:1,cost:120,levelKey:"boucle"},
     {id:"corale",name:"Corale",icon:"files/chorale%20shop.png",desc:"Des chanteurs apparaissent en bas de l'écran et doublent les clics de la Click bank.",max:1,cost:200,levelKey:"corale"},
     {id:"golden",name:"Golden Fabrice",icon:"files/golden%20icone.png",desc:"Débloque le skin Golden Fabrice.",max:1,cost:200,levelKey:"golden"},
     {id:"trueGolden",name:"True Golden",icon:"files/icone%20TrueGOLDEN%20fabrice.png",desc:"Débloque le skin True Golden après l'achat de tous les autres objets.",max:1,cost:1000,levelKey:"trueGolden"},
-    {id:"heartCombat",name:"Combat contre Fabrice",icon:"assets/heart.gif",desc:"Débloque le bouton cœur qui mène au combat contre Fabrice. Disponible avec tous les skins.",max:1,cost:2000,levelKey:"heartCombat"}
+    {id:"heartCombat",name:"Fabrice l'Immortel",icon:"assets/heart.gif",desc:"Débloque le cœur qui lance le combat contre Fabrice. Disponible après avoir obtenu tous les skins.",max:1,cost:2000,levelKey:"heartCombat"}
   ];
   /* Skins : un visuel par skin (public/assets/skins/). Les images ne sont chargées qu'une fois le skin débloqué. */
   var SKINS=[
@@ -368,6 +368,19 @@ body{transition:background-color .6s}
   save.shop.items.trueGolden = !!save.shop.items.trueGolden;
   save.shop.items.heartCombat = !!save.shop.items.heartCombat;
   save.shop.version = 3;
+  if(!save.migrations||typeof save.migrations!=="object"||Array.isArray(save.migrations))save.migrations={};
+  if(!save.migrations.resetBankAndHighScoresAbove70){
+    save.shop.bank=0;
+    delete save.u.s80;delete save.u.s90;delete save.u.s100;
+    save.shop.items.heartCombat=false;
+    save.migrations.resetBankAndHighScoresAbove70=1;
+    persist();
+  }
+  if(!save.migrations.requirePurchaseForImmortal){
+    save.shop.items.heartCombat=false;
+    save.migrations.requirePurchaseForImmortal=1;
+    persist();
+  }
   save.shop.items.corale = !!save.shop.items.corale;
   save.shop.items.coraleEnabled = save.shop.items.corale ? (typeof save.shop.items.coraleEnabled === "boolean" ? save.shop.items.coraleEnabled : true) : false;
   /* Sauvegardes existantes : les exploits déjà réalisés donnent leur skin */
@@ -458,7 +471,7 @@ body{transition:background-color .6s}
   }
   function getDeathChance(){
     var heartLevel = Number(save.shop.items.heart)||0;
-    if(heartLevel >= 10)return 0;
+    
     return Math.max(0, 0.10 - heartLevel * 0.00001);
   }
   function getDoubleChance(){
@@ -845,7 +858,7 @@ body{transition:background-color .6s}
     var gain = 1 + (Math.random() < getDoubleChance() ? 1 : 0);
     n += gain;
     out.textContent=n;play((n>10?0.45:0.6+Math.random()*1.2)*pitch);anim();
-    setBg(n);if(n%10===0&&n<=100)unlock("s"+n);
+    setBg(n);if(n%10===0&&n<=70)unlock("s"+n);
     if(Math.random() < getDeathChance()){
       dead=true;onDeath();
       setTimeout(function(){if(fallen)return;stage.classList.add("dead");errBeep();hint.textContent="Le jeu ne fonctionne plus.";},450);

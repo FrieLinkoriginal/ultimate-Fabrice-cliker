@@ -58,7 +58,7 @@ function saveClickerProgress(earnedClicks,previousClicks,won){
     if(!save.shop.items||typeof save.shop.items!=="object"||Array.isArray(save.shop.items))save.shop.items={};
     var bank=Number(save.shop.bank);
     save.shop.bank=(Number.isFinite(bank)&&bank>0?bank:0)+earnedClicks;
-    for(var threshold=70;threshold<=100;threshold+=10){
+    for(var threshold=80;threshold<=100;threshold+=10){
       if(previousClicks<threshold&&S.clicks>=threshold)save.u["s"+threshold]=1;
     }
     if(won)save.u.trueEnding=1;

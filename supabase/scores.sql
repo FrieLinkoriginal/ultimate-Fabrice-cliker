@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 -- À exécuter une seule fois dans Supabase > SQL Editor.
->>>>>>> 2ddae8c75dd30fd2ad41afe32081b90bbee71ae9
 create table if not exists public.scores (
   id uuid primary key default gen_random_uuid(),
   name text not null check (

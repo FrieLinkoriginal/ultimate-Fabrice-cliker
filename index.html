@@ -159,7 +159,7 @@ body{transition:background-color .6s}
 </style>
 </head>
 <body>
-<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><img class="bank-icon" src="files/bank.png" alt="" aria-hidden="true"><span>Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="aide-button" id="aide" type="button">Aide</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button><button class="aide-button" id="coraleMute" type="button" aria-pressed="true">♫ Corale</button></div>
+<div class="top"><div class="score" aria-live="polite">Clics : <b id="n">0</b></div><div class="click-bank" aria-live="polite"><img class="bank-icon" src="files/bank.png" alt="" aria-hidden="true"><span>Click bank : </span><b id="bank">0</b></div><button class="b95" id="trophy" type="button">Succès <span id="cnt">0/0</span></button><button class="b95" id="coll" type="button" hidden>Collection</button><button class="b95" id="mus" type="button" aria-pressed="true">♪ Musique</button><button class="aide-button" id="coraleMute" type="button" aria-pressed="true" hidden>♫ Corale</button></div>
 <audio id="bgm" src="assets/musique.mp3" loop preload="auto"></audio>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <button class="shop-button" id="shopButton" type="button" hidden aria-label="Ouvrir le magasin"><img src="files/chaise.png" alt="Magasin"></button>
@@ -313,8 +313,9 @@ body{transition:background-color .6s}
     {id:"heart",name:"Cœur",icon:"files/coeur.png",desc:"Réduit la chance de mort de Fabrice de 0,001% par niveau.",max:10,cost:function(level){return 20+level*18;},levelKey:"heart"},
     {id:"double",name:"Double clique",icon:"files/double-clik.png",desc:"Donne 0,01% de chance qu'un clic compte double.",max:5,cost:function(level){return 35+level*45;},levelKey:"double"},
     {id:"boucle",name:"Boucle",icon:"files/boucle.png",desc:"Si le score est dans le top 5, le pseudo est inscrit automatiquement et on revient directement à Fabrice.",max:1,cost:120,levelKey:"boucle"},
-    {id:"golden",name:"Golden Fabrice",icon:"files/nouveau-fabrice.png",desc:"Débloque le skin Golden Fabrice.",max:1,cost:220,levelKey:"golden"},
-    {id:"corale",name:"Corale",icon:"files/chaise.png",desc:"Des mini Fabrice qui chantent en bas de l'écran et jouent de petits 'hey'.",max:1,cost:200,levelKey:"corale"}
+    {id:"corale",name:"Corale",icon:"files/chorale%20shop.png",desc:"Des chanteurs apparaissent en bas de l'écran et doublent les clics de la Click bank.",max:1,cost:200,levelKey:"corale"},
+    {id:"golden",name:"Golden Fabrice",icon:"files/golden%20icone.png",desc:"Débloque le skin Golden Fabrice.",max:1,cost:200,levelKey:"golden"},
+    {id:"trueGolden",name:"True Golden",icon:"files/icone%20TrueGOLDEN%20fabrice.png",desc:"Débloque le skin True Golden après l'achat de tous les autres objets.",max:1,cost:1000,levelKey:"trueGolden"}
   ];
   /* Skins : un visuel par skin (public/assets/skins/). Les images ne sont chargées qu'une fois le skin débloqué. */
   var SKINS=[
@@ -325,7 +326,8 @@ body{transition:background-color .6s}
     {id:"k5",name:"Green Fabrice",src:"assets/skins/skin5.png"},
     {id:"k6",name:"Fabrice COOL",src:"assets/skins/skin6.png"},
     {id:"k7",name:"Fabrice drogue",src:"assets/skins/skin7.png"},
-    {id:"k8",name:"Golden Fabrice",src:"files/golden-fabrice.png"}
+    {id:"k8",name:"Golden Fabrice",src:"files/golden-fabrice.png"},
+    {id:"k9",name:"True Golden Fabrice",src:"files/TRUE%20GOLDEN%20Fabrice.png"}
   ];
   SKINS.forEach(function(k,i){k.hue=(i+1)*47;k.ar="990/1616";k.x={l:"94.8%",t:".4%",w:"4.6%",h:"2.8%"};});
   var KEY="fabrice-clicker-save",save={u:{},sk:{},skin:"",last:-1,streak:0,stats:{deaths:0},shop:{items:{},bank:0,unlocked:false,name:""}};
@@ -344,13 +346,17 @@ body{transition:background-color .6s}
   save.shop.items.double = Math.max(0,Math.min(5,Number(save.shop.items.double)||0));
   save.shop.items.boucle = !!save.shop.items.boucle;
   save.shop.items.boucleEnabled = save.shop.items.boucle ? (typeof save.shop.items.boucleEnabled === "boolean" ? save.shop.items.boucleEnabled : true) : false;
+  var legacyTrueGoldenOwned = !save.shop.version && !!save.shop.items.golden;
   save.shop.items.golden = !!save.shop.items.golden;
+  save.shop.items.trueGolden = !!save.shop.items.trueGolden || legacyTrueGoldenOwned;
+  save.shop.version = 2;
   save.shop.items.corale = !!save.shop.items.corale;
   save.shop.items.coraleEnabled = save.shop.items.corale ? (typeof save.shop.items.coraleEnabled === "boolean" ? save.shop.items.coraleEnabled : true) : false;
   /* Sauvegardes existantes : les exploits déjà réalisés donnent leur skin */
   if(save.u.r2)save.sk.k2=1;
   if(save.u.d67)save.sk.k6=1;
   if(save.u.d69)save.sk.k7=1;
+  if(save.shop.items.trueGolden)save.sk.k9=1;
   /* La Collection reste cachée tant qu'aucun skin n'est débloqué */
   function syncColl(){document.getElementById("coll").hidden=!SKINS.some(function(k){return save.sk[k.id];});}
   syncColl();
@@ -362,40 +368,16 @@ body{transition:background-color .6s}
   var lastUserInteract = Date.now();
   var chorusPulse = null;
   var coraleMelodyTimers = [];
-  var helpBoosting = false;
-  var helpBankSnapshot = 0;
   var coraleMuteButton = document.getElementById("coraleMute");
   function syncBank(){if(bankEl)bankEl.textContent=String(Math.max(0,Math.round(save.shop.bank||0))); if(shopButton){shopButton.hidden = !save.shop.unlocked;}}
   function syncCoraleMute(){
     if(!coraleMuteButton)return;
     var active = !!save.shop.items.corale && !!save.shop.items.coraleEnabled;
-    coraleMuteButton.disabled = !save.shop.items.corale;
+    coraleMuteButton.hidden = !save.shop.items.corale;
     coraleMuteButton.textContent = active ? "♫ Corale" : "🔇 Corale";
     coraleMuteButton.setAttribute("aria-pressed", active ? "true" : "false");
   }
   function syncPseudoBox(){if(chatBox)chatBox.hidden = !save.shop.items.boucle; if(chatName && save.shop.name){chatName.value=save.shop.name;}}
-  function consumeHelpBankBoost(){
-    if(!helpBoosting)return;
-    helpBoosting=false;
-    save.shop.bank = Number(helpBankSnapshot)||0;
-    helpBankSnapshot = 0;
-    syncBank();
-    persist();
-  }
-  function activateHelpBankBoost(){
-    if(helpBoosting)return;
-    helpBoosting=true;
-    helpBankSnapshot = Number(save.shop.bank)||0;
-    save.shop.bank = 999999;
-    syncBank();
-    persist();
-  }
-  document.addEventListener("pointerdown",function(e){
-    if(helpBoosting && !(e.target && e.target.closest && e.target.closest("#aide"))){consumeHelpBankBoost();}
-  },true);
-  document.addEventListener("keydown",function(e){
-    if(helpBoosting && e.key && e.key !== "Tab" && !(e.target && e.target.closest && e.target.closest("#aide"))){consumeHelpBankBoost();}
-  },true);
   function syncCorale(){
     var chorus=document.getElementById("chorus");
     if(!chorus)return;
@@ -418,7 +400,7 @@ body{transition:background-color .6s}
       chorus.dataset.ready = "1";
       chorus.innerHTML = "";
       for(var i=0;i<5;i++){
-        var img=new Image();img.src=DEFAULT_SRC;img.alt="Mini Fabrice";img.className="mini-fabrice";img.draggable=false;img.loading="eager";img.decoding="async";chorus.appendChild(img);
+        var img=new Image();img.src="files/chorale%20obj.png";img.alt="Chanteur de la chorale";img.className="mini-fabrice";img.draggable=false;img.loading="eager";img.decoding="async";chorus.appendChild(img);
       }
       resumeAudioIfNeeded();
       if(!chorusPulse){
@@ -469,7 +451,6 @@ body{transition:background-color .6s}
   }
   function unlockShop(){
     save.shop.unlocked=true;
-    unlock("shop");
     persist();
     syncBank();
   }
@@ -515,8 +496,10 @@ body{transition:background-color .6s}
     if(SKINS.every(function(k){return !!save.sk[k.id];}))unlock("allskins");
   }
   function checkAllShopAchievement(){
-    var ok = Number(save.shop.items.heart||0) >= 10 && Number(save.shop.items.double||0) >= 5 && !!save.shop.items.boucle && !!save.shop.items.golden;
-    if(ok)unlock("allshop");
+    if(allShopItemsExceptTrueGoldenPurchased() && save.shop.items.trueGolden)unlock("allshop");
+  }
+  function allShopItemsExceptTrueGoldenPurchased(){
+    return Number(save.shop.items.heart||0) >= 10 && Number(save.shop.items.double||0) >= 5 && !!save.shop.items.boucle && !!save.shop.items.corale && !!save.shop.items.golden;
   }
   function unlockSkin(id){
     if(save.sk[id])return;
@@ -565,6 +548,7 @@ body{transition:background-color .6s}
   trophy.addEventListener("click",openPanel);
   function openShop(){
     if(!save.shop.unlocked){unlockShop();}
+    unlock("shop");
     var v=document.createElement("div");v.className="veil shop-panel";
     v.innerHTML='<div class="panel" role="dialog" aria-label="Magasin"><div class="tb2"><span>Magazinzin</span><button type="button" aria-label="Fermer">x</button></div><div class="shop-top"><img src="files/alan.png" alt="Alan" id="alanFace"></div><div class="shop-grid"></div></div>';
     var grid=v.querySelector(".shop-grid");
@@ -573,16 +557,20 @@ body{transition:background-color .6s}
     function render(){
       grid.innerHTML="";
       SHOP_ITEMS.forEach(function(item){
+        if(item.id === "trueGolden" && !save.shop.items.trueGolden && !allShopItemsExceptTrueGoldenPurchased())return;
         var level=(item.levelKey&&typeof save.shop.items[item.levelKey]==="number")?save.shop.items[item.levelKey]:0;
-        var isOwned = item.max===1 ? !!(save.shop.items[item.levelKey]) : level >= item.max;
+        var isOwned = item.displayOnly || (item.max===1 ? !!(save.shop.items[item.levelKey]) : level >= item.max);
         var card=document.createElement("div");card.className="shop-card";
-        var statusText = item.max===1 ? (isOwned ? "Acheté" : "Prix : "+shopCost(item)+" clics") : "Niveau "+level+" / "+item.max+" • "+shopCost(item)+" clics";
+        var statusText = item.displayOnly ? "À débloquer avec True Golden" : item.max===1 ? (isOwned ? "Acheté" : "Prix : "+shopCost(item)+" clics") : "Niveau "+level+" / "+item.max+" • "+shopCost(item)+" clics";
         if(item.id === "boucle" && isOwned){
           statusText = (save.shop.items.boucleEnabled ? "Activée" : "Désactivée") + " • " + shopCost(item) + " clics";
         }
         card.innerHTML='<img src="'+item.icon+'" alt="'+item.name+'"><h3>'+item.name+'</h3><p>'+item.desc+'</p><div class="shop-meta"><span>' + statusText + '</span></div>';
         var btn=document.createElement("button");btn.type="button";btn.className="shop-buy";btn.disabled = false;
-        if(item.id === "boucle" && isOwned){
+        if(item.displayOnly){
+          btn.textContent = "Voir True Golden";
+          btn.disabled = true;
+        } else if(item.id === "boucle" && isOwned){
           btn.textContent = save.shop.items.boucleEnabled ? "Désactiver" : "Activer";
         } else {
           btn.disabled = isOwned || save.shop.bank < shopCost(item);
@@ -590,6 +578,7 @@ body{transition:background-color .6s}
         }
         btn.addEventListener("click",function(e){
           e.stopPropagation();
+          if(item.displayOnly)return;
           if(item.id === "boucle" && isOwned){
             save.shop.items.boucleEnabled = !save.shop.items.boucleEnabled;
             persist();syncPseudoBox();render();
@@ -601,17 +590,16 @@ body{transition:background-color .6s}
             return;
           }
           var cost=shopCost(item);
-          if(isOwned || save.shop.bank < cost){return;}
+          if(isOwned || (item.id === "trueGolden" && !allShopItemsExceptTrueGoldenPurchased()) || save.shop.bank < cost){return;}
           save.shop.bank -= cost;
           if(item.levelKey === "boucle"){save.shop.items.boucle = true; save.shop.items.boucleEnabled = true;}
-          else if(item.levelKey === "golden"){save.shop.items.golden = true; unlockSkin("k8"); }
+          else if(item.levelKey === "golden"){save.shop.items.golden = true;}
+          else if(item.levelKey === "trueGolden"){save.shop.items.trueGolden = true;}
           else if(item.levelKey === "corale"){save.shop.items.corale = true; save.shop.items.coraleEnabled = true;}
           else {save.shop.items[item.levelKey] = Math.min(item.max, (save.shop.items[item.levelKey]||0)+1);}
           persist();syncBank();syncPseudoBox();syncCorale();checkAllShopAchievement();render();
           if(item.levelKey === "golden")unlockSkin("k8");
-          if(item.id === "boucle")unlock("shop");
-          if(item.id === "boucle")checkAllShopAchievement();
-          if(item.id === "corale")unlock("shop");
+          if(item.levelKey === "trueGolden")unlockSkin("k9");
         });
         card.querySelector(".shop-meta").appendChild(btn);
         grid.appendChild(card);
@@ -625,15 +613,7 @@ body{transition:background-color .6s}
     document.body.appendChild(v);
     v.querySelector("button").focus();
   }
-  if(shopButton)shopButton.addEventListener("click",function(){unlock("shop"); openShop();});
-  var aideButton=document.getElementById("aide");
-  if(aideButton){
-    aideButton.addEventListener("click",function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      activateHelpBankBoost();
-    });
-  }
+  if(shopButton)shopButton.addEventListener("click",openShop);
   if(coraleMuteButton){
     coraleMuteButton.addEventListener("click",function(e){
       e.preventDefault();
@@ -909,7 +889,7 @@ body{transition:background-color .6s}
     if(submitted||sending)return;
     var nm=hsname.value.trim().replace(/\s+/g," ");
     if(!nm){hsmsg.textContent="Écris ton nom d'abord.";return;}
-    if(nm.toLowerCase()==="fabrice"){hsmsg.textContent="Ce nom est pris par Fabrice.";return;}
+    if(nm.toLowerCase()==="fabrice"){unlock("menteur");hsmsg.textContent="Ce nom est pris par Fabrice.";return;}
     try{localStorage.setItem(NK,nm);}catch(e){}
     if(chatName){chatName.value=nm;save.shop.name=nm;persist();}
     sending=true;hsname.disabled=true;hsok.disabled=true;hsmsg.textContent="Envoi…";
@@ -926,6 +906,9 @@ body{transition:background-color .6s}
       });
   }
   hsok.addEventListener("click",submit);
+  hsname.addEventListener("input",function(){
+    if(hsname.value.trim().toLowerCase()==="fabrice")unlock("menteur");
+  });
   hsname.addEventListener("keydown",function(e){if(e.key==="Enter")submit();});
   restart.addEventListener("click",reset);
   function wiggle(){
@@ -935,7 +918,8 @@ body{transition:background-color .6s}
   /* Un clic compte +1, avec 10% de chances de tuer Fabrice. pitch : 1 = voix normale, 2 = plus aigu */
   function hit(pitch,anim){
     if(dead)return false;
-    save.shop.bank = (Number(save.shop.bank)||0) + 1;
+    var bankGain = save.shop.items.corale && save.shop.items.coraleEnabled ? 2 : 1;
+    save.shop.bank = (Number(save.shop.bank)||0) + bankGain;
     syncBank();
     persist();
     var gain = 1 + (Math.random() < getDoubleChance() ? 1 : 0);

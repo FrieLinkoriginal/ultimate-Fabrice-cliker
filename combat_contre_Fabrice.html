@@ -165,7 +165,7 @@ const hit=(x,y,r)=>{if(Math.hypot(x-S.sx,y-S.sy)<r+6)hurt()};
 const headCount=()=>S.clicks>=40?4:S.clicks>=20?3:2;
 const A={
 clic:{txt:"* Une souris arrive du bord de l’écran…\n* Elle a l’air d’avoir envie de cliquer.",
-init(){this.fast=S.clicks>=40;const n=this.n||(this.fast?1:S.clicks>=20?3:2),NW=this.NW||(this.fast?8:3);this.period=this.fast?.8:1.8;this.warn=this.fast?.38:.9;this.hitEnd=this.warn+.2;this.dur=NW*this.period+.2;this.s=[];for(let w=0;w<NW;w++)shuf([0,1,2,3]).slice(0,n).forEach(q=>this.s.push({w,q,a:[[-40,R()*H],[W+40,R()*H],[R()*W,-40],[R()*W,H+40]][Math.floor(R()*4)]}))},
+init(){this.fast=S.clicks>=40;const n=this.n||(this.fast?1:S.clicks>=20?3:2),NW=this.NW||(this.fast?8:3);this.period=this.fast?.48:1.8;this.warn=this.fast?.23:.9;this.hitEnd=this.warn+(this.fast?.15:.2);this.dur=NW*this.period+.2;this.s=[];for(let w=0;w<NW;w++)shuf([0,1,2,3]).slice(0,n).forEach(q=>this.s.push({w,q,a:[[-40,R()*H],[W+40,R()*H],[R()*W,-40],[R()*W,H+40]][Math.floor(R()*4)]}))},
 rect(q){return[BX+(q%2)*BW/2,BY+(q>>1)*BH/2,BW/2,BH/2]},
 update(){this.s.forEach(o=>{const st=this.t-o.w*this.period;if(st>=this.warn&&st<this.hitEnd){const[x,y,w,h]=this.rect(o.q);if(S.sx>x&&S.sx<x+w&&S.sy>y&&S.sy<y+h)hurt()}})},
 draw(){this.s.forEach(o=>{const st=this.t-o.w*this.period;if(st<0||st>this.hitEnd+.2)return;const[x,y,w,h]=this.rect(o.q);
@@ -176,7 +176,7 @@ if(CUR.complete&&CUR.naturalWidth){const hh=50,ww=hh*CUR.naturalWidth/CUR.natura
 chaise:{txt:"* Une chaise tombe du plafond.\n* Elle ne sait pas s’arrêter.",
 init(){const advanced=S.clicks>=40,n=this.n||(S.clicks>=20?3:2);this.dur=7;this.o=[...Array(n)].map((_,i)=>advanced?{x:[BX+20,BX+BW-20,BX+BW/2][i],y:[BY+BH/2,BY+BH/2,BY+BH-20][i],vx:0,vy:0,gx:[420,-420,0][i],gy:[0,0,-500][i],d:0}:{x:BX+30+R()*(BW-60),y:-40,vx:(R()<.5?-1:1)*(90+R()*60),vy:0,d:i*1})},
 update(dt){const advanced=S.clicks>=40;this.o.forEach(o=>{if(this.t<o.d)return;if(advanced){o.vx+=o.gx*dt;o.vy+=o.gy*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
-if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)*.8}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)*.8}
+if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)}
 if(o.y<BY+16){o.y=BY+16;o.vy=Math.abs(o.vy)*.8}if(o.y>BY+BH-16){o.y=BY+BH-16;o.vy=-Math.abs(o.vy)*.8}
 }else{o.vy+=900*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
 if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)}

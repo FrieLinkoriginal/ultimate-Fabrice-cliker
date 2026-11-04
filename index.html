@@ -263,19 +263,32 @@ body{transition:background-color .6s}
   function stopCoraleMelody(){
     coraleMelodyTimers.forEach(function(timer){clearTimeout(timer);});
     coraleMelodyTimers = [];
+    if(chorusPulse){clearTimeout(chorusPulse);chorusPulse=null;}
   }
   function playCoraleMelody(){
     if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
-    stopCoraleMelody();
-    var notes=[392,392,440,392,523.25,392,659.25,587.33,523.25,440,523.25,659.25,587.33,523.25,392,440,392];
-    notes.forEach(function(freq,index){
+    var beat=560,notes=[
+      [392,1],[392,1],[440,1],[392,1],[523.25,1],[493.88,2],
+      [392,1],[392,1],[440,1],[392,1],[587.33,1],[523.25,2],
+      [392,1],[392,1],[783.99,1],[659.25,1],[523.25,1],[493.88,1],[440,2],
+      [698.46,1],[698.46,1],[659.25,1],[523.25,1],[587.33,1],[523.25,2]
+    ];
+    var elapsed=0;
+    notes.forEach(function(note){
+      var freq=note[0],duration=note[1],start=elapsed;
+      elapsed+=duration*beat;
       var timer=setTimeout(function(){
+        coraleMelodyTimers=coraleMelodyTimers.filter(function(id){return id!==timer;});
         if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
-        tone(freq,freq*1.08,0,0.2,"square",0.05);
-        tone(freq*0.75,freq*0.8,0.05,0.14,"square",0.03);
-      },index*220);
+        tone(freq,freq*0.99,0,duration*beat/1000*0.9,"triangle",0.055);
+        tone(freq/2,freq/2*0.99,0,duration*beat/1000*0.82,"sine",0.018);
+      },start);
       coraleMelodyTimers.push(timer);
     });
+    chorusPulse=setTimeout(function(){
+      chorusPulse=null;
+      playCoraleMelody();
+    },elapsed+1800);
   }
   function errBeep(){tone(520,500,0,0.13,"square",0.12);tone(330,310,0.15,0.22,"square",0.12);}
   function thud(){tone(140,40,0,0.25,"sine",0.4);}
@@ -432,10 +445,6 @@ body{transition:background-color .6s}
         chorus.innerHTML="";
         delete chorus.dataset.ready;
       }
-      if(chorusPulse){
-        clearInterval(chorusPulse);
-        chorusPulse = null;
-      }
       syncCoraleMute();
       return;
     }
@@ -446,14 +455,8 @@ body{transition:background-color .6s}
         var img=new Image();img.src="files/chorale%20obj.png";img.alt="Chanteur de la chorale";img.className="mini-fabrice";img.draggable=false;img.loading="eager";img.decoding="async";chorus.appendChild(img);
       }
       resumeAudioIfNeeded();
-      if(!chorusPulse){
-        chorusPulse = setInterval(function(){
-          if(!save.shop.items.corale || !save.shop.items.coraleEnabled)return;
-          resumeAudioIfNeeded();
-          playCoraleMelody();
-        },2200);
-      }
     }
+    if(!chorusPulse&&!coraleMelodyTimers.length)playCoraleMelody();
     syncCoraleMute();
   }
   function setShopName(value){

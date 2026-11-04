@@ -12,6 +12,7 @@ body{margin:0;background:var(--page);color:var(--ink);font-family:"Courier New",
 #stage{position:relative;aspect-ratio:640/400;background:#008080;transition:background .9s;overflow:hidden}
 #stage.dark{background:#000}
 #cv{width:100%;height:100%;display:block;cursor:default}
+#combatClicks{position:absolute;left:8px;top:8px;z-index:2;padding:5px 8px;background:rgba(0,0,0,.72);border:1px solid #fff;color:#fff;font:bold 14px "Courier New",monospace;text-shadow:1px 1px #000;pointer-events:none}
 #win{position:absolute;left:50%;top:50%;width:min(320px,90%);transform:translate(-50%,-50%);background:#c0c0c0;border:2px outset #fff;font:13px Tahoma,Arial,sans-serif;color:#000}
 #win .tb{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;padding:3px 6px;font-weight:bold;display:flex;justify-content:space-between;transition:1.5s}
 #win .mn{padding:2px 6px;transition:1.5s}
@@ -40,6 +41,7 @@ body{margin:0;background:var(--page);color:var(--ink);font-family:"Courier New",
 <div id="game">
 <div id="stage">
 <canvas id="cv" width="640" height="400"></canvas>
+<div id="combatClicks" aria-live="polite">Clics : <span id="combatClickCount">0</span></div>
 </div>
 <div id="panel"><div id="hud"><span>VOUS</span><span>HP</span><div id="bar"><i></i></div><span id="hpn">20/20</span></div>
 <div id="tx"></div><div id="btns"></div></div>
@@ -48,7 +50,7 @@ body{margin:0;background:var(--page);color:var(--ink);font-family:"Courier New",
 </div>
 <audio id="battleMusic" src="files/ultimate%20battle%20song.mp3" loop preload="auto"></audio>
 <script>
-const $=s=>document.querySelector(s),cv=$("#cv"),c=cv.getContext("2d");
+const $=s=>document.querySelector(s),cv=$("#cv"),c=cv.getContext("2d"),combatClickCount=$("#combatClickCount");
 const battleMusic=$("#battleMusic"),musicToggle=$("#musicToggle");
 battleMusic.volume=0.35;
 musicToggle.addEventListener("click",()=>{
@@ -94,7 +96,7 @@ function playAttackSound(attack){
  });
 }
 const KILL=100,W=640,H=400,BX=220,BY=200,BW=200,BH=180,R=Math.random,wait=ms=>new Promise(r=>setTimeout(r,ms));
-const S={hp:20,clicks:0,tookHit:false,dc:0,dbl:false,mult:1,bonus:0,mod:"normal",st:"intro",sx:0,sy:0,vy:0,li:1,inv:0,atk:null,fl:[],tm:0,shake:0,strikeT:0,broke:false,fabA:1,dying:false,dyT:0,er:[],flash:0,fall:0,fin:0,q:[],res:null};
+const S={hp:20,clicks:0,tookHit:false,dc:2,dbl:false,mult:1,bonus:0,mod:"normal",st:"intro",sx:0,sy:0,vy:0,li:1,inv:0,atk:null,fl:[],tm:0,shake:0,strikeT:0,broke:false,fabA:1,dying:false,dyT:0,er:[],flash:0,fall:0,fin:0,q:[],res:null};
 function saveClickerProgress(earnedClicks,previousClicks,won){
   var key="fabrice-clicker-save",save;
   try{
@@ -263,17 +265,10 @@ let last=performance.now();
 function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;S.tm+=dt;
 if(S.st==="intro")intro(dt);
 else{if(S.st==="fight")upd(dt);draw(dt)}
-const p=Math.max(0,S.hp)/20*100;$("#bar i").style.width=p+"%";$("#hpn").textContent=Math.max(0,S.hp)+"/20";requestAnimationFrame(loop)}
+const p=Math.max(0,S.hp)/20*100;$("#bar i").style.width=p+"%";$("#hpn").textContent=Math.max(0,S.hp)+"/20";combatClickCount.textContent=String(S.clicks);requestAnimationFrame(loop)}
 /* ---------- Déroulé ---------- */
 const fight=key=>{playAttackSound(key);S.st="fight";const a=Object.create(A[key]);a.t=0;a.init();S.atk=a;S.sx=BX+BW/2;S.sy=S.mod==="blue"?BY+BH-9:S.mod==="pink"?BY+BH*2/5:BY+BH/2;S.li=1;S.vy=0;S.inv=.8;return new Promise(r=>S.res=r)};
 const strike=()=>{const previousClicks=S.clicks;S.st="strike";S.clicks=Math.min(S.clicks+S.mult,S.fin?KILL:KILL-4);const earnedClicks=S.clicks-previousClicks;if(earnedClicks>0)saveClickerProgress(earnedClicks,previousClicks,false);if(S.clicks>=KILL){S.flash=1.3;S.fall=1;S.dying=true}S.shake=.3;S.fl.push({t:"+"+S.mult,x:320,y:60,l:1.1});S.bar={hold:1.2};say("","none");return new Promise(r=>S.res=r)};
-function unlockDoubleClickMilestones(previousClicks){
- const unlocked=[];
- if(previousClicks<20&&S.clicks>=20){S.dc++;unlocked.push("80 PV");}
- if(previousClicks<60&&S.clicks>=60){S.dc++;unlocked.push("40 PV");}
- if(unlocked.length)S.dbl=true;
- return unlocked;
-}
 function end(msg,win){if(win)saveClickerProgress(0,S.clicks,true);S.st="menu";$("#btns").innerHTML="";return say(msg,"none").then(()=>btns([["Retour","home"]])).then(()=>location.href="index.html")}
 async function main(){
 await ready;await new Promise(r=>S.iEnd=r);$("#panel").style.visibility="visible";S.st="menu";
@@ -283,7 +278,7 @@ for(;;){
  let ch;for(;;){say(S.fin?"* Fabrice vacille derrière les erreurs."+(KILL-S.clicks>1?"s":"")+".":PROMPT[turn%PROMPT.length],"none");ch=await btns(S.fin?[["ATTAQUER","atk"]]:[["ATTAQUER","atk"],["ACT","act"],["FUIR","flee"]]);
   if(ch==="act"){ch=await btns([["Double clic ("+S.dc+"/2)","dbl",S.dc<=0],["Coucou!","hi"],["Retour","back"]],true);if(ch==="back")continue}break}
  if(ch==="flee"){await say("* Tu quittes le combat.\n* Fabrice te fait coucou.","none");return end("Tu as fui.\n* Fabrice continue de faire coucou, tout seul.")}
- if(ch==="atk"){const previousClicks=S.clicks;await strike();const unlocked=unlockDoubleClickMilestones(previousClicks);if(unlocked.length)await say("* Fabrice a "+unlocked.join(" et ")+" de vie.\n* Tu débloques "+(unlocked.length>1?"deux doubles clics":"un double clic")+" !");
+ if(ch==="atk"){await strike();
   if(S.clicks>=KILL){S.dying=true;await say("* Fabrice ne tient plus.\n* Il fait coucou une dernière fois… puis disparaît.",2500);return end("Victoire.\n* La fenêtre « fabrice » est enfin fermée.",true)}
   const k=S.clicks;if(!S.fin&&S.clicks>=KILL-4){await finale();if(S.hp<=0){await say("* Tu es tombé.\n* Fabrice fait coucou.","none");return end("GAME OVER")}turn++;continue}if(S.fin){turn++;continue}}
  if(ch==="dbl"){S.dc--;S.mult*=2;S.bonus++;await say("* DOUBLE CLIC ! Tous tes clics sont multipliés (x"+S.mult+") pour toute la partie.\n* Mais Fabrice s’énerve : ses attaques contiennent un projectile de plus.")}

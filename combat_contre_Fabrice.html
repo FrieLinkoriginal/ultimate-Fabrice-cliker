@@ -174,16 +174,11 @@ else if(st<this.hitEnd){c.fillStyle="rgba(255,0,0,.6)";c.fillRect(x,y,w,h)}
 const p=Math.min(st/this.warn,1),e=1-Math.pow(1-p,3),tx=x+w/2+14,ty=y+h/2+14;
 if(CUR.complete&&CUR.naturalWidth){const hh=50,ww=hh*CUR.naturalWidth/CUR.naturalHeight;c.drawImage(CUR,o.a[0]+(x+w/2-o.a[0])*e,o.a[1]+(y+h/2-o.a[1])*e,ww,hh)}})}},
 chaise:{txt:"* Une chaise tombe du plafond.\n* Elle ne sait pas s’arrêter.",
-init(){const advanced=S.clicks>=40,normalCount=S.clicks>=20?3:2,reduction=S.mod==="normal"?0:advanced?2:S.clicks>=20?1:0,n=this.n||normalCount-reduction;this.dur=7;this.o=[...Array(n)].map((_,i)=>advanced?{x:BX+16,y:S.mod==="pink"?BY+BH/5:BY+BH*(i+1)/(n+1),vx:i%2===0?260:-260,vy:-110+R()*220,lane:0,d:0}:{x:BX+30+R()*(BW-60),y:-40,vx:(R()<.5?-1:1)*(90+R()*60),vy:0,d:i*1});this.lasers=advanced&&S.mod!=="normal"?[{offset:0}]:[]},
-update(dt){const advanced=S.clicks>=40;this.o.forEach(o=>{if(this.t<o.d)return;if(advanced){o.vy+=260*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
-if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)*.78;if(S.mod==="pink"){o.lane=(o.lane+1)%4;o.y=BY+BH*(o.lane+1)/5}}
-if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)*.78;if(S.mod==="pink"){o.lane=(o.lane+1)%4;o.y=BY+BH*(o.lane+1)/5}}
-if(o.y<BY+16){o.y=BY+16;o.vy=Math.abs(o.vy)*.72}
-if(o.y>BY+BH-16){o.y=BY+BH-16;o.vy=-Math.abs(o.vy)*.72}
-}else{o.vy+=900*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
+init(){const advanced=S.clicks>=40,normalCount=S.clicks>=20?3:2,reduction=S.mod==="normal"?0:advanced?2:S.clicks>=20?1:0,n=this.n||normalCount-reduction;this.dur=7;this.o=[...Array(n)].map((_,i)=>({x:BX+30+R()*(BW-60),y:-40,vx:(R()<.5?-1:1)*(90+R()*60),vy:0,d:i*1}));this.lasers=advanced&&S.mod!=="normal"?[{offset:0,targets:[...Array(8)].map(()=>S.mod==="pink"?BY+BH*(1+Math.floor(R()*4))/5:BY+BH-9)}]:[]},
+update(dt){const advanced=S.clicks>=40;this.o.forEach(o=>{if(this.t<o.d)return;o.vy+=900*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
 if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)}
-const f=BY+BH-16;if(o.y>f){o.y=f;o.vy=-Math.max(Math.abs(o.vy)*.85,380)}}hit(o.x,o.y,15)});this.lasers.forEach(l=>{const cycle=(this.t+l.offset)%1,y=BY+18+(BH-36)*Math.min(cycle/.4,1);if(cycle>=.4&&cycle<.62&&S.sx>=BX&&S.sx<=BX+BW&&Math.abs(S.sy-y)<12)hurt()})},
-draw(){c.font="34px sans-serif";c.textAlign="center";c.textBaseline="middle";this.o.forEach(o=>{if(this.t>=o.d)chair(o)});this.lasers.forEach(l=>{const cycle=(this.t+l.offset)%1,y=BY+18+(BH-36)*Math.min(cycle/.4,1),firing=cycle>=.4&&cycle<.62;if(cycle<.78){if(cycle>=.34&&cycle<.62){c.save();c.globalAlpha=firing?1:.45;c.strokeStyle="#fff";c.shadowColor="#fff";c.shadowBlur=firing?12:2;c.lineWidth=firing?5:1;c.beginPath();c.moveTo(BX+4,y);c.lineTo(BX+BW+10,y);c.stroke();c.restore()}crushedHead(y,cycle,firing)}})}},
+const f=BY+BH-16;if(o.y>f){o.y=f;o.vy=-Math.max(Math.abs(o.vy)*.85,380)}hit(o.x,o.y,15)});this.lasers.forEach(l=>{const elapsed=this.t+l.offset,cycle=elapsed%1,y=BY+18+(l.targets[Math.min(Math.floor(elapsed),l.targets.length-1)]-(BY+18))*Math.min(cycle/.35,1);if(cycle>=.4&&cycle<.62&&S.sx>=BX&&S.sx<=BX+BW&&Math.abs(S.sy-y)<12)hurt()})},
+draw(){c.font="34px sans-serif";c.textAlign="center";c.textBaseline="middle";this.o.forEach(o=>{if(this.t>=o.d)chair(o)});this.lasers.forEach(l=>{const elapsed=this.t+l.offset,cycle=elapsed%1,y=BY+18+(l.targets[Math.min(Math.floor(elapsed),l.targets.length-1)]-(BY+18))*Math.min(cycle/.35,1),firing=cycle>=.4&&cycle<.62;if(cycle<.78){if(cycle>=.35&&cycle<.62){c.save();c.globalAlpha=firing?1:.45;c.strokeStyle="#fff";c.shadowColor="#fff";c.shadowBlur=firing?12:2;c.lineWidth=firing?5:1;c.beginPath();c.moveTo(BX+4,y);c.lineTo(BX+BW+10,y);c.stroke();c.restore()}crushedHead(y,cycle,firing)}})}},
 tete:{txt:"* Des énormes têtes apparaissent sur la droite.\n* Elles ont quelque chose à dire. Elles le crachent.",
 init(){this.dur=7.5;this.nh=this.nh||headCount();this.nt=[...Array(this.nh)].map((_,i)=>.7+i*.45);if(S.mod==="blue"&&this.nh===4)this.nt=[.7,.7,1.6,1.6];this.hy=this.nt.map(()=>BY+30+R()*(BH-60));this.sp=[];this.op=this.nt.map(()=>0)},
 update(dt){const bl=S.mod==="blue",t=this.t;
@@ -246,6 +241,47 @@ function crushedHead(y,cycle,firing){const appear=Math.min(1,cycle/.12,(.78-cycl
 function drawEr(dt){S.er.forEach(e=>{if(S.fall){e.d-=dt;if(e.d<=0){e.vy+=1500*dt;e.y+=e.vy*dt;e.a+=e.va*dt}}
 c.save();c.translate(e.x,e.y);c.rotate(e.a);c.scale(e.s,e.s);c.fillStyle="#c0c0c0";c.fillRect(-30,-20,60,40);c.fillStyle="#000080";c.fillRect(-30,-20,60,10);c.fillStyle="#d00";c.beginPath();c.arc(-8,8,7,0,7);c.fill();
 c.fillStyle="#fff";c.font="bold 10px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText("X",-8,8);c.strokeStyle="#000";c.lineWidth=2;c.strokeRect(-30,-20,60,40);c.restore()})}
+const FINAL_PHASES=[14,16,16,18],FINAL_NAMES=["Pluie d’erreurs","Chaises en folie","Rythme infernal","Crash final"],FINAL_COLORS={normal:"#f22",pink:"#ff5fd0",blue:"#3a8cff"};
+const finalRowY=i=>BY+BH*(i+.5)/4;
+function setFinalPhase(n){const f=S.fin;f.phase=n;f.phaseT=0;f.hazards=[];f.zones=[];f.timers={};f.chairCount=0;f.flash=.8;f.shake=.35;
+ if(n===1)f.mode="normal";if(n===2)f.mode="blue";if(n===3){f.mode="pink";f.player.row=1;f.player.y=finalRowY(1)}if(n===4){f.mode="normal";f.modeT=3}}
+function startFinalAttack(){S.fin={phase:0,phaseT:0,time:0,mode:"normal",modeT:3,hazards:[],zones:[],timers:{},chairCount:0,player:{x:BX+BW/2,y:BY+BH/2,vy:0,row:1},intro:0,flash:1,shake:.5};S.st="final";$("#btns").innerHTML="";$("#tx").textContent="* SURCHARGE SYSTÈME : SURVIS AUX QUATRE PHASES !";return new Promise(resolve=>{S.finalResolve=resolve})}
+function finishFinal(won){const resolve=S.finalResolve;S.finalResolve=null;S.st="menu";if(won){S.dying=true;S.fall=1;S.fabA=1}resolve&&resolve(won)}
+function finalDamage(){const f=S.fin;if(S.inv>0)return;S.tookHit=true;S.hp-=3;S.inv=.8;f.shake=.35;f.flash=.5;if(S.hp<=0){S.hp=0;finishFinal(false)}}
+function spawnFinalError(x=BX+20+R()*(BW-40),y=BY-20){S.fin.hazards.push({type:"error",x,y,w:42,h:30,vx:0,vy:170+S.fin.phaseT*4})}
+function spawnFinalHead(side,y,size=34){S.fin.hazards.push({type:"head",x:side<0?BX-24:BX+BW+24,y,w:size,h:size,vx:side<0?260:-260,vy:0})}
+function spawnFinalChair(y=BY-24){const f=S.fin;if(f.chairCount>=3)return;f.chairCount++;f.hazards.push({type:"chair",x:BX+30+R()*(BW-60),y,w:48,h:42,vx:(80+R()*90)*(R()<.5?-1:1),vy:0,gravity:520,life:11})}
+function spawnFinalZone(q){S.fin.zones.push({q,t:0,from:R()<.5?-30:W+30})}
+function everyFinal(dt,key,interval,fn){const f=S.fin;f.timers[key]=(f.timers[key]||0)-dt;if(f.timers[key]<=0){fn();f.timers[key]=interval}}
+function finalAnyY(){const f=S.fin;return f.mode==="pink"?finalRowY(Math.floor(R()*4)):BY+20+R()*(BH-40)}
+function updateFinal(dt){const f=S.fin,p=f.player;f.time+=dt;f.shake=Math.max(0,f.shake-dt);f.flash=Math.max(0,f.flash-dt*2.5);S.inv=Math.max(0,S.inv-dt);
+ if(f.phase===0){f.intro+=dt;if(f.intro>=2.6)setFinalPhase(1);return}
+ f.phaseT+=dt;const dx=(keys.r?1:0)-(keys.l?1:0),dy=(keys.d?1:0)-(keys.u?1:0);p.x=cl(p.x+dx*175*dt,BX+8,BX+BW-8);
+ if(f.mode==="normal")p.y=cl(p.y+dy*175*dt,BY+8,BY+BH-8);
+ else if(f.mode==="blue"){const floor=BY+BH-8;if(p.y>=floor&&dy<0)p.vy=-390;p.vy+=900*dt;p.y+=p.vy*dt;if(p.y>=floor){p.y=floor;p.vy=0}if(p.y<BY+8){p.y=BY+8;p.vy=0}}
+ else{if(dy<0&&!keys._finalUp){p.row=Math.max(0,p.row-1);keys._finalUp=1}if(dy>0&&!keys._finalDown){p.row=Math.min(3,p.row+1);keys._finalDown=1}if(!dy)keys._finalUp=keys._finalDown=0;p.y=finalRowY(p.row)}
+ if(f.phase===1){everyFinal(dt,"error",Math.max(.4,.9-f.phaseT*.02),()=>spawnFinalError());everyFinal(dt,"zone",2.6,()=>[0,1,2,3].sort(()=>R()-.5).slice(0,3).forEach(spawnFinalZone))}
+ if(f.phase===2){everyFinal(dt,"chair",1,()=>spawnFinalChair());everyFinal(dt,"head",.5,()=>{spawnFinalHead(-1,BY+BH/2+Math.sin(f.phaseT*1.8)*BH*.38,24);spawnFinalHead(1,BY+BH/2-Math.sin(f.phaseT*1.8)*BH*.38,24)})}
+ if(f.phase===3){const interval=Math.max(.18,.7-Math.floor(f.phaseT/3)*.13);everyFinal(dt,"rhythm",interval,()=>{const y=finalRowY(Math.floor(R()*4)),kind=R();if(kind<.4)spawnFinalHead(R()<.5?-1:1,y);else if(kind<.7)spawnFinalError(R()<.5?BX-22:BX+BW+22,y);else{spawnFinalChair(y);const o=f.hazards[f.hazards.length-1];if(o){o.vx=o.x<BX+BW/2?330:-330;o.gravity=0}}})}
+ if(f.phase===4){f.modeT-=dt;if(f.modeT<=0){f.modeT=3;const choices=["normal","pink","blue"].filter(m=>m!==f.mode);f.mode=choices[Math.floor(R()*choices.length)];if(f.mode==="pink"){p.row=cl(Math.floor((p.y-BY)/BH*4),0,3);p.y=finalRowY(p.row)}if(f.mode==="blue")p.y=BY+BH-8;f.flash=.7;f.shake=.3}
+ everyFinal(dt,"error",1.1,()=>spawnFinalError());everyFinal(dt,"head",.45,()=>spawnFinalHead(R()<.5?-1:1,finalAnyY(),28));everyFinal(dt,"chair",4,()=>spawnFinalChair());everyFinal(dt,"zone",2,()=>spawnFinalZone(Math.floor(R()*4)))}
+ f.hazards.forEach(h=>{h.x+=h.vx*dt;if(h.gravity){h.vy+=h.gravity*dt;h.y+=h.vy*dt;h.life-=dt;if(h.x<BX+24){h.x=BX+24;h.vx=Math.abs(h.vx)}if(h.x>BX+BW-24){h.x=BX+BW-24;h.vx=-Math.abs(h.vx)}if(h.y>BY+BH-20){h.y=BY+BH-20;h.vy=-Math.max(Math.abs(h.vy)*.8,280)}}else h.y+=h.vy*dt;
+ if(Math.abs(h.x-p.x)<h.w*.4+8&&Math.abs(h.y-p.y)<h.h*.4+8)finalDamage()});
+ f.hazards=f.hazards.filter(h=>h.x>BX-60&&h.x<BX+BW+60&&h.y<BY+BH+40&&!(h.gravity&&h.life<=0));if(!f.hazards.some(h=>h.gravity))f.chairCount=0;
+ f.zones.forEach(z=>{z.t+=dt;if(z.t>1.1&&z.t<1.6){const x=BX+(z.q%2)*BW/2,y=BY+Math.floor(z.q/2)*BH/2;if(p.x>x&&p.x<x+BW/2&&p.y>y&&p.y<y+BH/2)finalDamage()}});
+ f.zones=f.zones.filter(z=>z.t<1.7);if(S.st!=="final")return;if(f.phaseT>=FINAL_PHASES[f.phase-1]){if(f.phase===4)finishFinal(true);else setFinalPhase(f.phase+1)}}
+function drawFinalError(x,y,w=42,h=30){c.save();c.translate(x,y);c.fillStyle="#c0c0c0";c.fillRect(-w/2,-h/2,w,h);c.fillStyle="#000080";c.fillRect(-w/2,-h/2,w,8);c.fillStyle="#d00";c.fillRect(-w/2+5,-h/2+13,8,8);c.fillStyle="#fff";c.font="bold 12px monospace";c.textAlign="center";c.textBaseline="middle";c.fillText("X",-w/2+9,-h/2+17);c.strokeStyle="#000";c.lineWidth=2;c.strokeRect(-w/2,-h/2,w,h);c.restore()}
+function drawFinal(dt){const f=S.fin,p=f.player;c.fillStyle="#000";c.fillRect(0,0,W,H);if(f.shake>0)c.translate((R()-.5)*f.shake*12,(R()-.5)*f.shake*12);
+ figF(0,S.fabA);if(f.phase===0){c.fillStyle="#222";c.fillRect(150,145,340,90);c.strokeStyle="#fff";c.lineWidth=2;c.strokeRect(150,145,340,90);c.fillStyle="#f22";c.font="bold 22px monospace";c.textAlign="center";c.fillText("SURCHARGE SYSTÈME",320,182);c.fillStyle="#fff";c.font="14px monospace";c.fillText("Prépare-toi...",320,211)}
+ else{c.strokeStyle="#fff";c.lineWidth=4;c.strokeRect(BX,BY,BW,BH);if(f.mode==="pink"){c.strokeStyle="#ff5fd0";c.lineWidth=2;for(let i=0;i<4;i++){const y=finalRowY(i);c.beginPath();c.moveTo(BX,y);c.lineTo(BX+BW,y);c.stroke()}}
+ f.zones.forEach(z=>{const x=BX+(z.q%2)*BW/2,y=BY+Math.floor(z.q/2)*BH/2;if(z.t<1.1){c.fillStyle="rgba(255,200,0,.25)";c.fillRect(x,y,BW/2,BH/2);if(CUR.complete&&CUR.naturalWidth){const k=Math.min(1,z.t/1.1),mx=z.from+(x+BW/4-z.from)*k,my=y+BH/4,w=32,h=w*CUR.naturalHeight/CUR.naturalWidth;c.drawImage(CUR,mx-w/2,my-h/2,w,h)}}else if(z.t<1.6){c.fillStyle="rgba(255,40,40,.65)";c.fillRect(x,y,BW/2,BH/2)}});
+ if(f.phase===2&&HEAD.complete&&HEAD.naturalWidth){const h=90,w=h*HEAD.naturalWidth/HEAD.naturalHeight;for(const side of[-1,1]){const y=BY+BH/2+Math.sin(f.phaseT*1.8+(side>0?Math.PI:0))*BH*.38;c.save();if(side>0){c.translate(W,0);c.scale(-1,1)}c.drawImage(HEAD,side<0?0:0,y-h/2,w,h);c.restore()}}
+ f.hazards.forEach(h=>{if(h.type==="chair")chair({x:h.x,y:h.y,d:h.life||0});else if(h.type==="head"&&HEAD.complete&&HEAD.naturalWidth){const size=h.w,w=size*HEAD.naturalWidth/HEAD.naturalHeight;c.save();if(h.vx>0){c.translate(h.x,h.y);c.scale(-1,1);c.drawImage(HEAD,-w/2,-size/2,w,size)}else c.drawImage(HEAD,h.x-w/2,h.y-size/2,w,size);c.restore()}else drawFinalError(h.x,h.y,h.w,h.h)});
+ if(!(S.inv>0&&Math.floor(S.inv*12)%2)){c.fillStyle=FINAL_COLORS[f.mode];c.font="26px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText("♥",p.x,p.y+1)}
+ }
+ c.setTransform(1,0,0,1,0,0);c.fillStyle="#fff";c.font="12px monospace";c.textAlign="right";c.fillText("SURCHARGE · PHASE "+(f.phase||1)+"/4",W-10,20);if(f.phase)c.fillText(FINAL_NAMES[f.phase-1]+" · "+Math.max(0,FINAL_PHASES[f.phase-1]-f.phaseT).toFixed(1)+" s",W-10,38);
+ if(f.flash>0){c.globalAlpha=f.flash*.45;c.fillStyle=f.mode==="pink"?"#ff6fb5":f.mode==="blue"?"#3a86ff":"#fff";c.fillRect(0,0,W,H);c.globalAlpha=1}
+ }
 /* ---------- Boucle ---------- */
 function upd(dt){const a=S.atk;a.t+=dt;S.inv=Math.max(0,S.inv-dt);const sp=170*dt,m=S.mod;
 const dx=(keys.r?1:0)-(keys.l?1:0),dy=(keys.d?1:0)-(keys.u?1:0);
@@ -255,6 +291,7 @@ else{S.sx+=dx*sp;S.vy+=1400*dt;S.sy+=S.vy*dt;const f=BY+BH-9;if(S.sy>=f){S.sy=f;
 S.sx=cl(S.sx,BX+9,BX+BW-9);S.sy=cl(S.sy,BY+9,BY+BH-9);
 a.update(dt);if(S.hp<=0||a.t>=a.dur){const r=S.res;S.res=null;S.st="menu";r&&r()}}
 function draw(dt){if(S.swp<1){S.swp+=dt;if(S.swp>=.5&&S.sk2!=null){S.skin=S.sk2;S.sk2=null}}c.fillStyle="#000";c.fillRect(0,0,W,H);
+if(S.st==="final"){drawFinal(dt);return}
 if(S.dying){S.dyT+=dt;S.fabA=Math.max(0,S.fabA-dt*.5)}
 let ox=0;if(S.shake>0){S.shake-=dt;ox=(R()-.5)*8}
 figF(ox,S.fabA);if(S.swp>0&&S.swp<1){const f=Math.sin(Math.PI*S.swp),cx=S.fp.x+FW*S.fp.k/2,cy=S.fp.y+FH*S.fp.k*.5,g=c.createRadialGradient(cx,cy,0,cx,cy,120);g.addColorStop(0,"rgba(255,255,255,"+f*.95+")");g.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=g;c.fillRect(cx-120,cy-120,240,240)}
@@ -271,12 +308,12 @@ S.fl=S.fl.filter(f=>(f.l-=dt)>0);S.fl.forEach(f=>{f.y-=40*dt;c.globalAlpha=Math.
 let last=performance.now();
 function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;S.tm+=dt;
 if(S.st==="intro")intro(dt);
-else{if(S.st==="fight")upd(dt);draw(dt)}
+else{if(S.st==="fight")upd(dt);if(S.st==="final")updateFinal(dt);draw(dt)}
 const p=Math.max(0,S.hp)/20*100;$("#bar i").style.width=p+"%";$("#hpn").textContent=Math.max(0,S.hp)+"/20";combatClickCount.textContent=String(S.clicks);requestAnimationFrame(loop)}
 /* ---------- Déroulé ---------- */
 const fight=key=>{playAttackSound(key);S.st="fight";const a=Object.create(A[key]);a.t=0;a.init();S.atk=a;S.sx=BX+BW/2;S.sy=S.mod==="blue"?BY+BH-9:S.mod==="pink"?BY+BH*2/5:BY+BH/2;S.li=1;S.vy=0;S.inv=.8;return new Promise(r=>S.res=r)};
 const damageForClicks=clicks=>clicks>=80?10:clicks>=40?8:clicks>=20?4:2;
-const strike=()=>{const previousClicks=S.clicks,damage=damageForClicks(previousClicks);S.st="strike";S.clicks=Math.min(previousClicks+damage,KILL);const earnedClicks=S.clicks-previousClicks;if(earnedClicks>0)saveClickerProgress(earnedClicks,previousClicks,false);if(S.clicks>=KILL){S.flash=1.3;S.fall=1;S.dying=true}S.shake=.3;S.fl.push({t:"+"+earnedClicks,x:320,y:60,l:1.1});S.bar={hold:1.2};say("","none");return new Promise(r=>S.res=r)};
+const strike=()=>{const previousClicks=S.clicks,damage=damageForClicks(previousClicks);S.st="strike";S.clicks=Math.min(previousClicks+damage,KILL);const earnedClicks=S.clicks-previousClicks;if(earnedClicks>0)saveClickerProgress(earnedClicks,previousClicks,false);if(S.clicks>=KILL)S.flash=1.3;S.shake=.3;S.fl.push({t:"+"+earnedClicks,x:320,y:60,l:1.1});S.bar={hold:1.2};say("","none");return new Promise(r=>S.res=r)};
 function end(msg,win){if(win)saveClickerProgress(0,S.clicks,true);S.st="menu";$("#btns").innerHTML="";return say(msg,"none").then(()=>btns([["Retour","home"]])).then(()=>location.href="index.html")}
 async function main(){
 await ready;await new Promise(r=>S.iEnd=r);$("#panel").style.visibility="visible";S.st="menu";
@@ -284,11 +321,13 @@ await say("* Fabrice est apparu.\n* Il fait coucou de la main.");
 S.q=shuf(ATK.normal);let ann="",turn=0;
 for(;;){
  let ch;for(;;){say(PROMPT[turn%PROMPT.length],"none");ch=await btns([["ATTAQUER","atk"],["ACT","act"],["FUIR","flee"]]);
-  if(ch==="act"){ch=await btns([["Coucou!","hi"],["Retour","back"]],true);if(ch==="back")continue}break}
- if(ch==="flee"){await say("* Tu quittes le combat.\n* Fabrice te fait coucou.","none");return end("Tu as fui.\n* Fabrice continue de faire coucou, tout seul.")}
+  if(ch==="act"){ch=await btns([["Coucou!","hi"],["Retour","back"]],true);if(ch==="back")continue}
+  if(ch==="flee"){await say("* Êtes-vous sûr de vouloir fuir ?");ch=await btns([["Oui, fuir","flee-confirm"],["Non, rester","back"]],true);if(ch==="back")continue}
+  break}
+ if(ch==="flee-confirm"){await say("* Tu quittes le combat.\n* Fabrice te fait coucou.","none");return end("Tu as fui.\n* Fabrice continue de faire coucou, tout seul.")}
  if(ch==="atk"){
   await strike();
-  if(S.clicks>=KILL){S.dying=true;await say("* Fabrice ne tient plus.\n* Il fait coucou une dernière fois… puis disparaît.",2500);return end("Victoire.\n* La fenêtre « fabrice » est enfin fermée.",true)}
+  if(S.clicks>=KILL){await say("* Fabrice déclenche une surcharge système !\n* Survis à ses quatre phases pour gagner.");await startFinalAttack();if(S.hp<=0){await say("* La surcharge t’a submergé.\n* Fabrice fait coucou.");return end("GAME OVER")}await say("* Fabrice ne tient plus.\n* Il fait coucou une dernière fois… puis disparaît.",2500);return end("Victoire.\n* La fenêtre « fabrice » est enfin fermée.",true)}
  }
  if(ch==="hi"){
   const healed=Math.min(S.clicks>=40?4:2,20-S.hp);

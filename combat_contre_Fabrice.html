@@ -176,21 +176,21 @@ if(CUR.complete&&CUR.naturalWidth){const hh=50,ww=hh*CUR.naturalWidth/CUR.natura
 chaise:{txt:"* Une chaise tombe du plafond.\n* Elle ne sait pas s’arrêter.",
 init(){const advanced=S.clicks>=40,n=this.n||(S.clicks>=20?3:2);this.dur=7;this.o=[...Array(n)].map((_,i)=>advanced?{x:[BX+20,BX+BW-20,BX+BW/2][i],y:[BY+BH/2,BY+BH/2,BY+BH-20][i],vx:0,vy:0,gx:[420,-420,0][i],gy:[0,0,-500][i],d:0}:{x:BX+30+R()*(BW-60),y:-40,vx:(R()<.5?-1:1)*(90+R()*60),vy:0,d:i*1})},
 update(dt){const advanced=S.clicks>=40;this.o.forEach(o=>{if(this.t<o.d)return;if(advanced){o.vx+=o.gx*dt;o.vy+=o.gy*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
-if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)}
+if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)*.8}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)*.8}
 if(o.y<BY+16){o.y=BY+16;o.vy=Math.abs(o.vy)*.8}if(o.y>BY+BH-16){o.y=BY+BH-16;o.vy=-Math.abs(o.vy)*.8}
 }else{o.vy+=900*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
 if(o.x<BX+16){o.x=BX+16;o.vx=Math.abs(o.vx)}if(o.x>BX+BW-16){o.x=BX+BW-16;o.vx=-Math.abs(o.vx)}
 const f=BY+BH-16;if(o.y>f){o.y=f;o.vy=-Math.max(Math.abs(o.vy)*.85,380)}}hit(o.x,o.y,15)})},
 draw(){c.font="34px sans-serif";c.textAlign="center";c.textBaseline="middle";this.o.forEach(o=>{if(this.t>=o.d)chair(o)})}},
 tete:{txt:"* Des énormes têtes apparaissent sur la droite.\n* Elles ont quelque chose à dire. Elles le crachent.",
-init(){this.dur=7.5;this.nh=this.nh||headCount();this.nt=[...Array(this.nh)].map((_,i)=>.7+i*.45);this.hy=this.nt.map(()=>BY+30+R()*(BH-60));this.sp=[];this.op=this.nt.map(()=>0)},
+init(){this.dur=7.5;this.nh=this.nh||headCount();this.nt=[...Array(this.nh)].map((_,i)=>.7+i*.45);if(S.mod==="blue"&&this.nh===4)this.nt=[.7,.7,1.6,1.6];this.hy=this.nt.map(()=>BY+30+R()*(BH-60));this.sp=[];this.op=this.nt.map(()=>0)},
 update(dt){const bl=S.mod==="blue",t=this.t;
 if(bl)this.hy=this.nt.map((_,i)=>this.nh===3&&i===2?BY-5:BY+BH-45-i*70+Math.sin(t*2+i*2)*8);
 const hasTopHead=bl&&this.nh===3;
 if(hasTopHead)this.hx=BX+BW/2+Math.sin(t*1.8)*BW*.36;
 const fourHeads=this.nh===4&&S.clicks>=40;
 if(fourHeads)this.hy=this.nt.map((_,i)=>BY+BH/2+Math.sin(t*2.4+i*Math.PI/2)*BH*.36);
-this.nt.forEach((_,i)=>{this.nt[i]-=dt;this.op[i]+=((this.nt[i]>0&&this.nt[i]<.4?1:0)-this.op[i])*Math.min(1,dt*14);if(this.nt[i]<=0&&t<this.dur-1.5){this.nt[i]=bl?1:.55+R()*1.25;const down=hasTopHead&&i===2,left=fourHeads&&i>=2;if(!bl&&!fourHeads)this.hy[i]=S.mod==="pink"?BY+BH*(1+Math.floor(R()*4))/5:BY+30+R()*(BH-60);this.sp.push(down?{x:this.hx,y:BY+20,down:true}:{x:fourHeads?(left?-15+hg(4).w*.8:W+15-hg(4).w*.2):hg(this.nh).l+hg(this.nh).w*.2,y:fourHeads?this.hy[i]:bl?BY+BH-9:this.hy[i],dir:left?1:-1})}});
+this.nt.forEach((_,i)=>{this.nt[i]-=dt;this.op[i]+=((this.nt[i]>0&&this.nt[i]<.4?1:0)-this.op[i])*Math.min(1,dt*14);if(this.nt[i]<=0&&t<this.dur-1.5){this.nt[i]=bl?1:.55+R()*1.25;const down=hasTopHead&&i===2,left=fourHeads&&i>=2;if(!bl&&!fourHeads)this.hy[i]=S.mod==="pink"?BY+BH*(1+Math.floor(R()*4))/5:BY+30+R()*(BH-60);this.sp.push(down?{x:this.hx,y:BY+20,down:true}:{x:fourHeads?(left?-15+hg(4).w*.8:W+15-hg(4).w*.2):hg(this.nh).l+hg(this.nh).w*.2,y:fourHeads&&bl?BY+BH-20-(i%2)*36:fourHeads?this.hy[i]:bl?BY+BH-9:this.hy[i],dir:left?1:-1})}});
 this.sp.forEach(p=>{if(p.down)p.y+=300*dt;else p.x+=p.dir*270*dt;hit(p.x,p.y,11)});this.sp=this.sp.filter(p=>p.down?p.y<H+25:p.dir===1?p.x<W+20:p.x>-20)},
 draw(){const g=hg(this.nh),sy=.755*g.h,jw=.78*g.w;this.hy.forEach((y,i)=>{if(!(HEAD.complete&&HEAD.naturalWidth))return;const down=S.mod==="blue"&&this.nh===3&&i===2,a=(this.op[i]||0)*.42,ca=Math.cos(a),sa=Math.sin(a),x=down?(this.hx||BX+BW/2)-g.w/2:g.l;
 const left=this.nh===4&&S.clicks>=40&&i>=2;
@@ -289,7 +289,7 @@ for(;;){
   if(S.clicks>=KILL){S.dying=true;await say("* Fabrice ne tient plus.\n* Il fait coucou une dernière fois… puis disparaît.",2500);return end("Victoire.\n* La fenêtre « fabrice » est enfin fermée.",true)}
  }
  if(ch==="hi"){
-  const healed=Math.min(2,20-S.hp);
+  const healed=Math.min(S.clicks>=40?4:2,20-S.hp);
   S.hp+=healed;
   await say(healed?"* Tu dis bonjour à Fabrice.\n* Pour te remercier de ta politesse, il te rend "+healed+" PV.":"* Tu dis bonjour à Fabrice.\n* Il te remercie, mais tu as déjà tous tes PV.");
  }

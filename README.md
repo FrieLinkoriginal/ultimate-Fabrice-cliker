@@ -26,6 +26,9 @@ group by jour
 order by jour desc;
 ```
 
+## Classement des succès
+Exécute [`supabase/achievements.sql`](./supabase/achievements.sql) dans le SQL Editor Supabase. Dans l'écran des succès, le bouton « Voir les autres » permet de choisir un pseudo et de consulter les succès des joueurs. Le pseudo est demandé une seule fois par navigateur. Les succès secrets non débloqués par les autres joueurs apparaissent sous la forme « Succès secret — Caché ». Les succès sont synchronisés depuis la sauvegarde locale du jeu ; ce classement communautaire n'est pas une preuve anti-triche.
+
 Au premier chargement de cette version, l'argent local et les succès 80, 90 et 100 sont remis à zéro. Le cœur se débloque après tous les succès qui ne dépendent pas du combat ; les succès au-dessus de 70 et la Vraie fin sont gagnés pendant le combat.
 
 Pour vider une fois le classement existant, exécute [`supabase/reset_scores.sql`](./supabase/reset_scores.sql) dans le SQL Editor Supabase avec un rôle administrateur.

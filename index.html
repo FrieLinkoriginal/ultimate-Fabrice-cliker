@@ -100,6 +100,15 @@ body{transition:background-color .6s}
 .panel{width:min(100%,380px);max-height:80vh;display:flex;flex-direction:column;background:var(--face);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:3px 3px 0 rgba(0,0,0,.45);padding:2px}
 .panel .tb2 button{font:inherit;font-size:13px;width:20px;height:18px;line-height:1;padding:0;background:var(--face);color:#000;cursor:pointer;border:2px solid;border-color:#fff #000 #000 #fff}
 .list{overflow:auto;margin:6px;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040;padding:4px;list-style:none}
+.panel>.list{flex:1;min-height:0}
+.achievement-board-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:4px 8px 8px}
+.achievement-board-actions .b95{font-size:15px;padding:6px 12px}
+.achievement-board-message{margin:8px;font-size:14px;min-height:1.3em}
+.achievement-board-name{display:flex;gap:6px;margin:8px}
+.achievement-board-name input{flex:1;min-width:0;font:inherit;padding:5px;border:2px solid;border-color:#404040 #fff #fff #404040}
+.achievement-player{width:100%;font:inherit;text-align:left;background:transparent;border:0;cursor:pointer}
+.achievement-player:hover,.achievement-player:focus-visible{color:#000080;text-decoration:underline}
+.achievement-board-progress{font-size:12px;color:#404040;margin-left:auto}
 .list li{display:flex;gap:8px;padding:5px 4px;font-size:15px;line-height:1.3;border-bottom:1px dotted #808080}
 .list li:last-child{border-bottom:0}
 .list li b{flex:none;width:1.2em;text-align:center}
@@ -215,6 +224,10 @@ body{transition:background-color .6s}
 <script>
   window.SiteAnalytics.configure(window.FABRICE_SUPABASE_URL, window.FABRICE_SUPABASE_ANON_KEY);
   window.SiteAnalytics.start();
+</script>
+<script src="supabase/achievements.js"></script>
+<script>
+  window.AchievementBoard.configure(window.FABRICE_SUPABASE_URL, window.FABRICE_SUPABASE_ANON_KEY);
 </script>
 <script>
 (function(){
@@ -541,6 +554,10 @@ body{transition:background-color .6s}
     if(save.u[id])return;
     var a=findAch(id);if(!a)return;
     save.u[id]=1;persist();refresh();
+    if(AchievementBoard.storedName()){
+      AchievementBoard.sync(AchievementBoard.playerId(),Object.keys(save.u).filter(function(achievementId){return !!save.u[achievementId];}))
+        .catch(function(error){console.error("Impossible de synchroniser les succès du joueur.",error);});
+    }
     q.push({h:a.secret?"Succès secret débloqué !":"",t:a.t,d:a.d});
     if(!showing)nextToast();
   }
@@ -590,7 +607,18 @@ body{transition:background-color .6s}
   }
   function openPanel(){
     var v=document.createElement("div");v.className="veil";
-    var html='<div class="panel" role="dialog" aria-label="Succès"><div class="tb2"><span>Succès ('+count()+'/'+total()+')</span><button type="button" aria-label="Fermer">x</button></div><ul class="list">';
+    var panel=document.createElement("div");panel.className="panel";panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Succès");
+    v.appendChild(panel);
+    function close(){v.remove();document.removeEventListener("keydown",esc);trophy.focus();}
+    function esc(e){if(e.key==="Escape")close();}
+    function setPanel(title,body,actions){
+      panel.innerHTML='<div class="tb2"><span></span><button type="button" aria-label="Fermer">x</button></div>'+body+
+        (actions?'<div class="achievement-board-actions">'+actions+'</div>':"");
+      panel.querySelector(".tb2 span").textContent=title;
+      panel.querySelector(".tb2 button").addEventListener("click",close);
+    }
+    function showAchievements(){
+      var html='<ul class="list">';
     ACH.forEach(function(a){
       var ok=!!save.u[a.id];
       html+='<li class="'+(ok?"":"lock")+'"><b>'+(ok?"✔":"?")+'</b><span>'+a.t+'<small>'+a.d+'</small></span></li>';
@@ -599,14 +627,92 @@ body{transition:background-color .6s}
       if(!save.u[a.id])return;
       html+='<li><b>★</b><span>'+a.t+'<small>'+a.d+'</small></span></li>';
     });
-    html+='</ul></div>';
-    v.innerHTML=html;
-    function close(){v.remove();document.removeEventListener("keydown",esc);trophy.focus();}
-    function esc(e){if(e.key==="Escape")close();}
-    v.addEventListener("click",function(e){if(e.target===v||e.target.tagName==="BUTTON")close();});
+      html+='</ul>';
+      setPanel("Succès ("+count()+"/"+total()+")",html,'<button class="b95" id="achievement-board-open" type="button">Voir les autres</button>');
+      panel.querySelector("#achievement-board-open").addEventListener("click",showBoard);
+    }
+    function showMessage(message,isError){
+      var el=panel.querySelector("#achievement-board-status");
+      if(!el)return;
+      el.textContent=message;
+      el.style.color=isError?"#a00000":"";
+    }
+    function showNameForm(){
+      setPanel("Joueurs et succès",
+        '<label for="achievement-username">Choisis un pseudo pour enregistrer tes succès (1 à 24 caractères).</label>'+
+        '<form id="achievement-board-form" class="achievement-board-name"><input id="achievement-username" maxlength="24" autocomplete="nickname" required>'+
+        '<button class="b95" type="submit">Valider</button></form><p class="achievement-board-message" id="achievement-board-status" aria-live="polite"></p>',
+        '<button class="b95" id="achievement-board-back" type="button">Retour aux succès</button>');
+      panel.querySelector("#achievement-board-back").addEventListener("click",showAchievements);
+      panel.querySelector("#achievement-board-form").addEventListener("submit",function(event){
+        event.preventDefault();
+        var username=panel.querySelector("#achievement-username").value.trim().replace(/\s+/g," ");
+        if(!username||username.length>24){showMessage("Le pseudo doit contenir entre 1 et 24 caractères.",true);return;}
+        showMessage("Enregistrement du pseudo...");
+        AchievementBoard.register(AchievementBoard.playerId(),username).then(function(player){
+          AchievementBoard.rememberName(player.username);
+          return AchievementBoard.sync(player.player_id,Object.keys(save.u).filter(function(id){return !!save.u[id];}));
+        }).then(loadPlayers).catch(function(error){showMessage(error.message||"Impossible d'enregistrer le pseudo.",true);});
+      });
+      panel.querySelector("#achievement-username").focus();
+    }
+    function loadPlayers(){
+      setPanel("Joueurs et succès",
+        '<p class="achievement-board-message" id="achievement-board-status" aria-live="polite">Chargement des joueurs...</p><ul class="list" id="achievement-board-players"></ul>',
+        '<button class="b95" id="achievement-board-back" type="button">Retour aux succès</button>');
+      panel.querySelector("#achievement-board-back").addEventListener("click",showAchievements);
+      var status=panel.querySelector("#achievement-board-status"),list=panel.querySelector("#achievement-board-players");
+      AchievementBoard.list().then(function(players){
+        if(!Array.isArray(players))throw new Error("La liste des joueurs reçue est invalide.");
+        list.textContent="";
+        if(!players.length){status.textContent="Aucun joueur pour le moment.";return;}
+        status.textContent="Clique sur un joueur pour voir ses succès.";
+        players.forEach(function(player,index){
+          var item=document.createElement("li"),button=document.createElement("button"),progress=document.createElement("span");
+          var earned=Array.isArray(player.achievements)?player.achievements.length:0;
+          button.type="button";button.className="achievement-player";button.textContent=(index+1)+". "+player.username;
+          progress.className="achievement-board-progress";progress.textContent=earned+"/"+total();
+          button.addEventListener("click",function(){showPlayer(player);});
+          item.appendChild(button);item.appendChild(progress);list.appendChild(item);
+        });
+      }).catch(function(error){status.textContent=error.message||"Impossible de charger les joueurs.";status.style.color="#a00000";});
+    }
+    function showBoard(){
+      var username=AchievementBoard.storedName();
+      if(!username){showNameForm();return;}
+      setPanel("Joueurs et succès",
+        '<p class="achievement-board-message" id="achievement-board-status" aria-live="polite">Synchronisation des succès...</p>',
+        '<button class="b95" id="achievement-board-back" type="button">Retour aux succès</button>');
+      panel.querySelector("#achievement-board-back").addEventListener("click",showAchievements);
+      AchievementBoard.register(AchievementBoard.playerId(),username).then(function(player){
+        AchievementBoard.rememberName(player.username);
+        return AchievementBoard.sync(player.player_id,Object.keys(save.u).filter(function(id){return !!save.u[id];}));
+      }).then(loadPlayers).catch(function(error){showMessage(error.message||"Impossible d'ouvrir la liste des joueurs.",true);});
+    }
+    function showPlayer(player){
+      var unlocked=Array.isArray(player.achievements)?player.achievements:[];
+      var html='<ul class="list">';
+      ACH.forEach(function(a){
+        var earned=unlocked.indexOf(a.id)!==-1;
+        html+='<li class="'+(earned?"":"lock")+'"><b>'+(earned?"✔":"?")+'</b><span>'+a.t+'<small>'+a.d+'</small></span></li>';
+      });
+      HID.forEach(function(a){
+        if(unlocked.indexOf(a.id)!==-1){
+          html+='<li><b>★</b><span>'+a.t+'<small>'+a.d+'</small></span></li>';
+        }else{
+          html+='<li class="lock"><b>?</b><span>Succès secret<small>Caché</small></span></li>';
+        }
+      });
+      html+='</ul>';
+      setPanel("Succès de "+player.username+" ("+unlocked.length+"/"+total()+")",html,
+        '<button class="b95" id="achievement-board-back" type="button">Retour aux joueurs</button>');
+      panel.querySelector("#achievement-board-back").addEventListener("click",loadPlayers);
+    }
+    v.addEventListener("click",function(e){if(e.target===v)close();});
     document.addEventListener("keydown",esc);
     document.body.appendChild(v);
-    v.querySelector("button").focus();
+    showAchievements();
+    panel.querySelector(".tb2 button").focus();
   }
   trophy.addEventListener("click",openPanel);
   function openShop(){

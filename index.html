@@ -526,6 +526,9 @@ body{transition:background-color .6s}
   var TOTAL_ACHIEVEMENTS = ACH.length + HID.length;
   function count(){var c=0;ACH.concat(HID).forEach(function(a){if(save.u[a.id])c++;});return c;}
   function total(){return TOTAL_ACHIEVEMENTS;}
+  function unlockedAchievementIds(){
+    return ACH.concat(HID).filter(function(a){return !!save.u[a.id];}).map(function(a){return a.id;});
+  }
   function refresh(){cnt.textContent=count()+"/"+total();}
   checkAllSkinAchievement();
   checkAllShopAchievement();
@@ -555,7 +558,7 @@ body{transition:background-color .6s}
     var a=findAch(id);if(!a)return;
     save.u[id]=1;persist();refresh();
     if(AchievementBoard.storedName()){
-      AchievementBoard.sync(AchievementBoard.playerId(),Object.keys(save.u).filter(function(achievementId){return !!save.u[achievementId];}))
+      AchievementBoard.sync(AchievementBoard.playerId(),unlockedAchievementIds())
         .catch(function(error){console.error("Impossible de synchroniser les succès du joueur.",error);});
     }
     q.push({h:a.secret?"Succès secret débloqué !":"",t:a.t,d:a.d});
@@ -651,7 +654,7 @@ body{transition:background-color .6s}
         showMessage("Enregistrement du pseudo...");
         AchievementBoard.register(AchievementBoard.playerId(),username).then(function(player){
           AchievementBoard.rememberName(player.username);
-          return AchievementBoard.sync(player.player_id,Object.keys(save.u).filter(function(id){return !!save.u[id];}));
+          return AchievementBoard.sync(player.player_id,unlockedAchievementIds());
         }).then(loadPlayers).catch(function(error){showMessage(error.message||"Impossible d'enregistrer le pseudo.",true);});
       });
       panel.querySelector("#achievement-username").focus();
@@ -686,7 +689,7 @@ body{transition:background-color .6s}
       panel.querySelector("#achievement-board-back").addEventListener("click",showAchievements);
       AchievementBoard.register(AchievementBoard.playerId(),username).then(function(player){
         AchievementBoard.rememberName(player.username);
-        return AchievementBoard.sync(player.player_id,Object.keys(save.u).filter(function(id){return !!save.u[id];}));
+        return AchievementBoard.sync(player.player_id,unlockedAchievementIds());
       }).then(loadPlayers).catch(function(error){showMessage(error.message||"Impossible d'ouvrir la liste des joueurs.",true);});
     }
     function showPlayer(player){

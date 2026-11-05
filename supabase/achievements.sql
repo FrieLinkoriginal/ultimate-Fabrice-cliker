@@ -57,25 +57,22 @@ declare
     'death1000', 'hour', 'one', 'zero', 'close', 'reffu', 'hand', 'menteur',
     'shop', 'alan', 'allshop', 'trueEnding', 'noHit', 'mute', 'lavage', 'coll'
   ];
-  unknown_id text;
+  valid_achievement_ids text[];
 begin
   if p_player_id is null or p_achievement_ids is null or cardinality(p_achievement_ids) > 100
     or array_position(p_achievement_ids, null) is not null then
     raise exception 'Progression des succès invalide.';
   end if;
 
-  select id into unknown_id
+  select coalesce(array_agg(distinct supplied.id order by supplied.id), '{}'::text[])
+  into valid_achievement_ids
   from unnest(p_achievement_ids) as supplied(id)
-  where id <> all (allowed_ids)
-  limit 1;
-  if unknown_id is not null then
-    raise exception 'Identifiant de succès invalide.';
-  end if;
+  where supplied.id = any (allowed_ids);
 
   update public.achievement_players p
   set achievements = (
         select coalesce(array_agg(distinct id order by id), '{}'::text[])
-        from unnest(p.achievements || p_achievement_ids) as earned(id)
+        from unnest(p.achievements || valid_achievement_ids) as earned(id)
       ),
       updated_at = now()
   where p.player_id = p_player_id;

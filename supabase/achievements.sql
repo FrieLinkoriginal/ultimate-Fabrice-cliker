@@ -32,7 +32,7 @@ begin
 
   insert into public.achievement_players (player_id, username)
   values (p_player_id, clean_username)
-  on conflict (player_id) do nothing;
+  on conflict on constraint achievement_players_pkey do nothing;
 
   return query
     select p.player_id, p.username

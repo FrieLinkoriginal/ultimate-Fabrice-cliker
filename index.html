@@ -329,7 +329,6 @@ body{transition:background-color .6s}
   /* ===== Succès ===== */
   var ACH=[],i0,k0;
   for(i0=10;i0<=100;i0+=10)ACH.push({id:"s"+i0,t:"Atteindre "+i0,d:"Arriver à "+i0+" clics"});
-  ACH.push({id:"d67",t:"Pile 67",d:"Mourir à exactement 67"});
   ACH.push({id:"d69",t:"Pile 69",d:"Mourir à exactement 69"});
   for(k0=2;k0<=3;k0++)ACH.push({id:"r"+k0,t:k0+" fois pareil",d:"Mourir "+k0+" fois de suite avec le même score"});
   ACH.push({id:"allskins",t:"Collection complète",d:"Débloquer tous les skins du jeu"});
@@ -590,13 +589,12 @@ body{transition:background-color .6s}
     save.stats.deaths = Math.max(0, Math.floor(Number(save.stats.deaths)||0) + 1);
     syncBank();
     spawnDeathText();
-    if(save.stats.deaths >= 1)unlock("death1");
+    if(save.stats.deaths === 1){unlock("death1");unlockShop();}
     if(save.stats.deaths >= 10)unlock("death10");
     if(save.stats.deaths >= 100)unlock("death100");
     if(save.stats.deaths >= 1000)unlock("death1000");
     if(n===1){unlock("one");unlockSkin("k1");}
     if(save.stats.deaths>=100)unlockSkin("k7");
-    if(n===67)unlock("d67");
     if(n===69)unlock("d69");
     if(save.shop.items.boucle){
       dlg.style.left=(15+Math.random()*25)+"%";
